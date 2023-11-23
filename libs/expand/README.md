@@ -31,7 +31,7 @@ The NestJS Expandable Library is a powerful and flexible extension for NestJS ap
 ## Installation
 
 ```bash
-npm install nestjs-expandable
+npm install @cisstech/nestjs-expand
 ```
 
 ## Usage
