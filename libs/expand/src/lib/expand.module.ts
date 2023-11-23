@@ -1,6 +1,6 @@
 // expand.module
 
-import { Global, Module } from '@nestjs/common'
+import { DynamicModule, Global, Module } from '@nestjs/common'
 
 import { APP_INTERCEPTOR } from '@nestjs/core'
 import { EXPAND_CONFIG, ExpandConfig } from './expand'
@@ -19,10 +19,10 @@ import { ExpandService } from './expand.service'
   ],
   exports: [ExpandService],
 })
-export class ExpandModule {
-  static forRoot(config?: ExpandConfig): ExpandModule {
+export class NestKitExpandModule {
+  static forRoot(config?: ExpandConfig): DynamicModule {
     return {
-      module: ExpandModule,
+      module: NestKitExpandModule,
       providers: [
         {
           provide: EXPAND_CONFIG,
