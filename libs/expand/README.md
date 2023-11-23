@@ -1,4 +1,4 @@
-# @cisstech/nest-expand
+# @cisstech/nestjs-expand
 
 <div align="center">
 
@@ -8,8 +8,8 @@ A NestJS module to build Dynamic Resource Expansion for APIs
 [![codecov](https://codecov.io/gh/cisstech/nestkit/branch/main/graph/badge.svg)](https://codecov.io/gh/cisstech/nestkit)
 [![codefactor](https://www.codefactor.io/repository/github/cisstech/nestkit/badge/main)](https://www.codefactor.io/repository/github/cisstech/nestkit/overview/main)
 [![GitHub Tag](https://img.shields.io/github/tag/cisstech/nestkit.svg)](https://github.com/cisstech/nestkit/tags)
-[![npm package](https://img.shields.io/npm/v/@cisstech/nest-expand.svg)](https://www.npmjs.org/package/@cisstech/nestkit)
-[![NPM downloads](http://img.shields.io/npm/dm/@cisstech/nest-expand.svg)](https://npmjs.org/package/@cisstech/nest-expand)
+[![npm package](https://img.shields.io/npm/v/@cisstech/nestjs-expand.svg)](https://www.npmjs.org/package/@cisstech/nestkit)
+[![NPM downloads](http://img.shields.io/npm/dm/@cisstech/nestjs-expand.svg)](https://npmjs.org/package/@cisstech/nestjs-expand)
 [![licence](https://img.shields.io/github/license/cisstech/nestkit)](https://github.com/cisstech/nestkit/blob/main/LICENSE)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
 
@@ -41,7 +41,7 @@ npm install nestjs-expandable
   ```typescript
   // user.controller.ts
   import { Controller, Get, NotFoundException } from '@nestjs/common'
-  import { Expandable } from '@cisstech/nest-expand'
+  import { Expandable } from '@cisstech/nestjs-expand'
   import { UserDTO } from './user.dto'
   import { UserService } from './user.service'
 
@@ -66,7 +66,7 @@ npm install nestjs-expandable
   ```typescript
   // user.expander.ts
   import { Injectable, NotFoundException } from '@nestjs/common'
-  import { ExpandContext, Expander, Expandable } from '@cisstech/nest-expand'
+  import { ExpandContext, Expander, Expandable } from '@cisstech/nestjs-expand'
   import { UserDTO } from './user.dto'
   import { CustomerService } from './user.service'
 
@@ -92,7 +92,7 @@ npm install nestjs-expandable
 // app.module.ts
 
 import { Module } from '@nestjs/common'
-import { NestKitExpandModule } from '@cisstech/nest-expand'
+import { NestKitExpandModule } from '@cisstech/nestjs-expand'
 import { UserExpander } from 'PATH_TO_FILE'
 import { UserController } from 'PATH_TO_FILE'
 
@@ -112,7 +112,7 @@ The library provides configuration options to customize its behavior. You can pa
 // app.module.ts
 
 import { Module } from '@nestjs/common'
-import { NestKitExpandModule } from '@cisstech/nest-expand'
+import { NestKitExpandModule } from '@cisstech/nestjs-expand'
 import { UserExpander } from 'PATH_TO_FILE'
 import { UserController } from 'PATH_TO_FILE'
 

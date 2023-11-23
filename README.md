@@ -17,9 +17,9 @@ A collection of libraries for NestJS developers.
 
 ## Packages
 
-| Package                                  | Description                                                  | Version                                                                                                                      |
-| ---------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| [`@cisstech/nest-expand`](./libs/expand) | A NestJS module to build Dynamic Resource Expansion for APIs | [![version](https://img.shields.io/npm/v/@golevelup/nestjs-common.svg)](https://www.npmjs.com/package/@cisstech/nest-expand) |
+| Package                                    | Description                                                  | Version                                                                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| [`@cisstech/nestjs-expand`](./libs/expand) | A NestJS module to build Dynamic Resource Expansion for APIs | [![version](https://img.shields.io/npm/v/@cisstech/nestjs-expand.svg)](https://www.npmjs.com/package/@cisstech/nestjs-expand) |
 
 ## 📄 Docs
 
