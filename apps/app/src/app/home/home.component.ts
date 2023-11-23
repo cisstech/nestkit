@@ -31,7 +31,7 @@ export class HomeComponent {
 
   | Package                                    | Description                                                  | Version                                                                                                                       |
   | ------------------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-  | [\`@cisstech/nestjs-expand\`](/docs/nestjs-expand) | A NestJS module to build Dynamic Resource Expansion for APIs | [![version](https://img.shields.io/npm/v/@cisstech/nestjs-expand.svg)](https://www.npmjs.com/package/@cisstech/nestjs-expand) |
+  | [\`@cisstech/nestjs-expand\`](docs/nestjs-expand) | A NestJS module to build Dynamic Resource Expansion for APIs | [![version](https://img.shields.io/npm/v/@cisstech/nestjs-expand.svg)](https://www.npmjs.com/package/@cisstech/nestjs-expand) |
 
   ## 📄 Docs
 
