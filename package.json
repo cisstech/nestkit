@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "0.0.0-beta.2",
+  "version": "0.0.0-beta.3",
   "description": "NestKit is a collection of libraries for NestJS developers.",
   "keywords": [
     "NestJS"
@@ -25,9 +25,10 @@
     "nx": "nx",
     "npm": "npm",
     "start": "nx run-many --target=serve --parallel",
-    "build:apps": "nx run-many --target=build --projects=api,app --configuration=production",
+    "build:api": "nx run api:build --prod",
+    "build:app": "nx run app:build --prod  --base-href='https://cisstech.github.io/nestkit/'",
     "build:libs": "nx run-many --target=build --projects=expand --configuration=production",
-    "publish:app": "angular-cli-ghpages --dir=./dist/apps/app",
+    "publish:app": "angular-cli-ghpages --dir=./dist/apps/app/browser",
     "test": "nx run-many --target=test --all --coverage=true --coverageReporters=lcov --watch=false --browsers=ChromeHeadless && node coverage-merger.js",
     "lint": "nx report && nx run-many --target=lint --all",
     "lint:fix": "nx report && nx run-many --target=lint --all --fix",
