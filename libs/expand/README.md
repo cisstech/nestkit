@@ -40,10 +40,10 @@ npm install nestjs-expandable
 
   ```typescript
   // user.controller.ts
-  import { Controller, Get, NotFoundException } from '@nestjs/common';
-  import { Expandable } from '@cisstech/nest-expand';
-  import { UserDTO } from './user.dto';
-  import { UserService } from './user.service';
+  import { Controller, Get, NotFoundException } from '@nestjs/common'
+  import { Expandable } from '@cisstech/nest-expand'
+  import { UserDTO } from './user.dto'
+  import { UserService } from './user.service'
 
   @Controller('users')
   export class UserController {
@@ -52,11 +52,11 @@ npm install nestjs-expandable
     @Get(':id')
     @Expandable(UserDTO)
     async getById(@Param('id') id: string): Promise<UserDTO> {
-      const user = await this.userService.getById(id);
+      const user = await this.userService.getById(id)
       if (!user) {
-        throw new NotFoundException(`User not found: ${id}`);
+        throw new NotFoundException(`User not found: ${id}`)
       }
-      return new UserDTO(user);
+      return new UserDTO(user)
     }
   }
   ```
@@ -65,10 +65,10 @@ npm install nestjs-expandable
 
   ```typescript
   // user.expander.ts
-  import { Injectable, NotFoundException } from '@nestjs/common';
-  import { ExpandContext, Expander, Expandable } from '@cisstech/nest-expand';
-  import { UserDTO } from './user.dto';
-  import { CustomerService } from './user.service';
+  import { Injectable, NotFoundException } from '@nestjs/common'
+  import { ExpandContext, Expander, Expandable } from '@cisstech/nest-expand'
+  import { UserDTO } from './user.dto'
+  import { CustomerService } from './user.service'
 
   @Injectable()
   @Expander(UserDTO)
@@ -76,12 +76,12 @@ npm install nestjs-expandable
     constructor(private readonly customerService: CustomerService) {}
 
     async customer(context: ExpandContext<Request, UserDTO>): Promise<CustomerDTO> {
-      const user = context.parent;
-      const customer = await this.customerService.getById(user.customerId);
+      const user = context.parent
+      const customer = await this.customerService.getById(user.customerId)
       if (!customer) {
-        throw new NotFoundException(`Customer not found: ${user.customerId}`);
+        throw new NotFoundException(`Customer not found: ${user.customerId}`)
       }
-      return new CustomerDTO(customer);
+      return new CustomerDTO(customer)
     }
   }
   ```
@@ -91,10 +91,10 @@ npm install nestjs-expandable
 ```typescript
 // app.module.ts
 
-import { Module } from '@nestjs/common';
-import { NestKitExpandModule } from '@cisstech/nest-expand';
-import { UserExpander } from 'PATH_TO_FILE';
-import { UserController } from 'PATH_TO_FILE';
+import { Module } from '@nestjs/common'
+import { NestKitExpandModule } from '@cisstech/nest-expand'
+import { UserExpander } from 'PATH_TO_FILE'
+import { UserController } from 'PATH_TO_FILE'
 
 @Module({
   imports: [NestKitExpandModule.forRoot()],
@@ -111,10 +111,10 @@ The library provides configuration options to customize its behavior. You can pa
 ```typescript
 // app.module.ts
 
-import { Module } from '@nestjs/common';
-import { NestKitExpandModule } from '@cisstech/nest-expand';
-import { UserExpander } from 'PATH_TO_FILE';
-import { UserController } from 'PATH_TO_FILE';
+import { Module } from '@nestjs/common'
+import { NestKitExpandModule } from '@cisstech/nest-expand'
+import { UserExpander } from 'PATH_TO_FILE'
+import { UserController } from 'PATH_TO_FILE'
 
 @Module({
   imports: [
