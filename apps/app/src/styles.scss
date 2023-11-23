@@ -1,1 +1,13 @@
-/* You can add global styles to this file, and also import other style files */
+@import './styles//normalize.scss';
+@import './styles/fonts';
+@import './styles/variables';
+@import './styles/material/light.scss';
+
+html {
+  width: 100vw;
+  height: 100vh;
+  overflow: auto;
+  color: var(--brand-text-primary);
+  background-color: var(--brand-background-color);
+  font-family: var(--brand-font);
+}

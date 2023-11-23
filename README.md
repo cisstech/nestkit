@@ -23,14 +23,14 @@ A collection of libraries for NestJS developers.
 
 ## 📄 Docs
 
-Documentation available at [https://cisstech.github.io/nest-kit/](https://cisstech.github.io/nest-kit/)
+Documentation available at [https://cisstech.github.io/nestkit/](https://cisstech.github.io/nestkit/)
 
 ## ⌨️ Development
 
 - Clone and install
 
 ```bash
-git clone https://github.com/cisstech/nest-kit
+git clone https://github.com/cisstech/nestkit
 cd nestkit
 yarn
 ```

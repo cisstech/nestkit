@@ -16,7 +16,12 @@
         "polyfills": ["zone.js"],
         "tsConfig": "apps/app/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
-        "assets": ["apps/app/src/favicon.ico", "apps/app/src/assets"],
+        "assets": [
+          "apps/app/src/favicon.ico",
+          "apps/app/src/assets",
+          { "glob": "**/*", "input": "./node_modules/@cisstech/nge/assets/monaco", "output": "./assets/vendors/nge/monaco/" },
+          { "glob": "**/*", "input": "./node_modules/@cisstech/nge/assets/markdown/", "output": "./assets/vendors/nge/markdown/" }
+        ],
         "styles": ["apps/app/src/styles.scss"],
         "scripts": []
       },

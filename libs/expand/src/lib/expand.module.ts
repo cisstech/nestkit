@@ -2,6 +2,7 @@
 
 import { DynamicModule, Global, Module } from '@nestjs/common'
 
+import { DiscoveryModule } from '@golevelup/nestjs-discovery'
 import { APP_INTERCEPTOR } from '@nestjs/core'
 import { EXPAND_CONFIG, ExpandConfig } from './expand'
 import { ExpandInterceptor } from './expand.interceptor'
@@ -9,14 +10,8 @@ import { ExpandService } from './expand.service'
 
 @Global()
 @Module({
-  imports: [],
-  providers: [
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: ExpandInterceptor,
-    },
-    ExpandService,
-  ],
+  imports: [DiscoveryModule],
+  providers: [{ provide: APP_INTERCEPTOR, useClass: ExpandInterceptor }, ExpandService],
   exports: [ExpandService],
 })
 export class NestKitExpandModule {
