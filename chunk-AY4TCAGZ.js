@@ -22,14 +22,14 @@ import{A as r,B as h}from"./chunk-3M42DFWL.js";import{Aa as c,R as o,Y as n,ka a
 
   ## \u{1F4C4} Docs
 
-  Documentation available at [https://cisstech.github.io/nest-kit/](https://cisstech.github.io/nest-kit/)
+  Documentation available at [https://cisstech.github.io/nestkit/](https://cisstech.github.io/nestkit/)
 
   ## \u2328\uFE0F Development
 
   - Clone and install
 
   \`\`\`bash
-  git clone https://github.com/cisstech/nest-kit
+  git clone https://github.com/cisstech/nestkit
   cd nestkit
   yarn
   \`\`\`
