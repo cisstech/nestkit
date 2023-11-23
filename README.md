@@ -23,6 +23,8 @@ A collection of libraries for NestJS developers.
 
 ## 📄 Docs
 
+Presentation available at [https://medium.com/@mciissee](https://medium.com/@mciissee/supercharging-nestjs-apis-a-deep-dive-into-dynamic-resource-expansion-0e932cc7b4f2)
+
 Documentation available at [https://cisstech.github.io/nestkit/](https://cisstech.github.io/nestkit/)
 
 ## ⌨️ Development
