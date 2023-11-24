@@ -1,7 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * A recursive object representing the properties to expand.
+ * Each property is either a boolean or another ExpandTree.
+ */
+export type ExpansionThree = {
+  [key: string]: ExpansionThree | boolean
+}
 
-export const createObjectFromDotNotation = (keys: string | string[]): Record<string, any> => {
-  const result: Record<string, any> = {}
+const expandThreeFromDotNotation = (keys: string | string[]): ExpansionThree => {
+  const result: ExpansionThree = {}
   const array = Array.isArray(keys) ? keys : [keys]
   array.forEach((key) => {
     const parts = key.split('.')
@@ -16,8 +22,27 @@ export const createObjectFromDotNotation = (keys: string | string[]): Record<str
         currentLevel[part] = true
       }
       // Move to the next level
-      currentLevel = currentLevel[part]
+      currentLevel = (currentLevel as ExpansionThree)[part] as ExpansionThree
     })
   })
   return result
+}
+
+/**
+ * Creates an ExpansionThree from a string or array of strings.
+ *
+ * @remarks
+ * This function assumes that the object is already an ExpansionThree if it's an object.
+ * @returns An ExpansionThree.
+ */
+export const createExpansionThree = (object: string | string[] | ExpansionThree): ExpansionThree => {
+  if (typeof object === 'string') {
+    return expandThreeFromDotNotation(object)
+  }
+
+  if (Array.isArray(object)) {
+    return expandThreeFromDotNotation(object)
+  }
+
+  return object
 }

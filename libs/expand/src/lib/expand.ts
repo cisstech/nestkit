@@ -66,6 +66,18 @@ export const EXPAND_CONFIG = Symbol('EXPAND_CONFIG')
 export type ExpandConfig = {
   /**
    * Whether to enable logging for the ExpandModule.
+   * @default `true`
    */
   enableLogging?: boolean
+
+  /**
+   * The name of the query parameter to use for expanding resources.
+   * @default `expands`
+   */
+  expandQueryParamName?: string
+}
+
+export const DEFAULT_EXPAND_CONFIG: ExpandConfig = {
+  enableLogging: true,
+  expandQueryParamName: 'expands',
 }
