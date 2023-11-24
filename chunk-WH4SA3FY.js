@@ -40,7 +40,9 @@ import{A as r,B as h}from"./chunk-3M42DFWL.js";import{Aa as c,R as o,Y as n,ka a
   yarn start
   \`\`\`
 
-  Browser would open automatically at <http://localhost:4200/>.
+
+  - Documentation app will be serve at <http://localhost:4200/>.
+  - Samples APIs documentations will be serve at <http://localhost:3000/api/doc>.
 
   ## \u{1F91D} Contribution
 
