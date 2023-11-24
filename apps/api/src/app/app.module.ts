@@ -1,12 +1,11 @@
-import { Module } from '@nestjs/common'
+import { Logger, Module } from '@nestjs/common'
 
 import { AppController } from './app.controller'
-import { AppService } from './app.service'
-import { NestKitExpandModule } from '@cisstech/nestjs-expand'
+import { ExpandSampleModule } from './samples/expand'
 
 @Module({
-  imports: [NestKitExpandModule.forRoot()],
+  imports: [ExpandSampleModule],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [Logger],
 })
 export class AppModule {}
