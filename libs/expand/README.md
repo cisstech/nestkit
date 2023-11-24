@@ -31,7 +31,7 @@ The NestJS Expandable Library is a powerful and flexible extension for NestJS ap
 ## Installation
 
 ```bash
-npm install @cisstech/nestjs-expand
+yarn add @golevelup/nestjs-discovery @cisstech/nestjs-expand
 ```
 
 ## Usage
@@ -130,7 +130,7 @@ export class AppModule {}
 
 ## Documentation
 
-For detailed documentation, examples, and advanced usage, please refer to the official documentation (COMMING SOON)
+For detailed documentation, examples, and advanced usage, please refer to the official documentation at <https://cisstech.github.io/nestkit/docs/nestjs-expand/getting-started>
 
 ## License
 

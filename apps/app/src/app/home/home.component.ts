@@ -53,7 +53,9 @@ export class HomeComponent {
   yarn start
   \`\`\`
 
-  Browser would open automatically at <http://localhost:4200/>.
+
+  - Documentation app will be serve at <http://localhost:4200/>.
+  - Samples APIs documentations will be serve at <http://localhost:3000/api/doc>.
 
   ## 🤝 Contribution
 
