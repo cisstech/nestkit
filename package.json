@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "0.0.0-beta.3",
+  "version": "0.0.0-beta.4",
   "description": "NestKit is a collection of libraries for NestJS developers.",
   "keywords": [
     "NestJS"
