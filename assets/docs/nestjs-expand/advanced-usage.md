@@ -70,7 +70,7 @@ export class CourseController {
   constructor(private readonly courseService: CourseService) {}
 
   @Get()
-  @Selectable(CourseDTO, {
+  @Selectable({
     queryParamName: 'myCustomQueryParam',
   })
   async getAllCourses(): Promise<CourseDTO[]> {
