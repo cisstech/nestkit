@@ -11,14 +11,18 @@ import {
   ExpandConfig,
   ExpandMethod,
   ExpandableParams,
+  SelectableParams,
 } from './expand'
-import { ExpansionThree, createExpansionThree } from './expand.utils'
+import { ExpansionThree, createExpansionThree, maskObjectWithThree } from './expand.utils'
 
 @Injectable()
 export class ExpandService implements OnModuleInit {
   private readonly logger = new Logger(ExpandService.name)
   private readonly expanders = new Map<Function, any>()
 
+  /**
+   * The configuration for the module.
+   */
   get config(): Readonly<ExpandConfig> {
     return this.conf
   }
@@ -27,7 +31,7 @@ export class ExpandService implements OnModuleInit {
     private readonly discovery: DiscoveryService,
     @Optional()
     @Inject(EXPAND_CONFIG)
-    readonly conf: ExpandConfig
+    private readonly conf: ExpandConfig
   ) {
     this.conf = { ...DEFAULT_EXPAND_CONFIG, ...conf }
   }
@@ -59,7 +63,7 @@ export class ExpandService implements OnModuleInit {
         })
 
       if (missing.length) {
-        throw new Error('Expand: missing providers with @RegisterExpander for : ' + missing)
+        throw new Error('missing providers with @RegisterExpander for : ' + missing)
       }
 
       if (this.conf?.enableLogging) {
@@ -72,80 +76,32 @@ export class ExpandService implements OnModuleInit {
   }
 
   /**
-   * Expands properties of a resource based on the provided parameters.
+   * Expands/selects properties of a resource based on the provided parameters.
    * @param request - The incoming request object.
    * @param resource - The resource to be expanded.
-   * @param params - The parameters for expansion, including the target class and rootField.
+   * @param expandable - The parameters for expansion, including the target class and rootField.
    * @returns The expanded resource.
    * @throws Error if there's an issue during the expansion process.
    */
-  async expand<T = any>(request: any, resource: any, params: ExpandableParams): Promise<T> {
-    const recursive = async (request: any, resource: any, params: ExpandableParams, three: ExpansionThree) => {
-      try {
-        const root = params.rootField ? resource[params.rootField] : resource
-        if (!root) {
-          this.logger.log(`Expand: nothing to expand on ${params.target.name}`)
-          return resource
-        }
-
-        const expander = this.expanders.get(params.target) as Record<string, ExpandMethod>
-        if (!expander) {
-          // This should never happen because of the check in onModuleInit so we just log a warning
-          this.logger.warn(`Expand: missing expander for ${params.target.name}`)
-          return resource
-        }
-
-        const resources = Array.isArray(root) ? root : [root]
-        const changes = await Promise.all(
-          resources.map(async (parent: any) => {
-            const extraValues: Record<string, unknown> = {}
-
-            for (const propName in three) {
-              const method = expander[propName]
-
-              if (!method) {
-                this.logger.warn(`Expand: missing method ${propName} on ${params.target.name}`)
-                continue
-              }
-
-              let value = await method.call(expander, { parent, request })
-
-              const propValue = three[propName]
-              if (value && typeof propValue === 'object') {
-                const recursiveParams = this.getMethodExpandableMetadata(method) as ExpandableParams
-                if (recursiveParams) {
-                  value = await recursive(request, value, recursiveParams, propValue)
-                } else {
-                  this.logger.warn(
-                    `Expand: missing @Expandable on ${
-                      params.target.name
-                    }.${propName} to recursively expand ${Object.keys(three)}`
-                  )
-                }
-              }
-
-              extraValues[propName] = value
-            }
-
-            return { ...parent, ...extraValues }
-          })
-        )
-
-        const result = Array.isArray(root) ? changes : changes[0]
-
-        return params.rootField ? { ...resource, [params.rootField]: result } : result
-      } catch (error: any) {
-        if (this.conf?.enableLogging) {
-          this.logger.error(`Error during expansion: ${error.message}`, error.stack)
-        }
-        throw error
-      }
-    }
-
+  async expandAndSelect<T = any>(
+    request: any,
+    resource: any,
+    expandable?: ExpandableParams,
+    selectable?: SelectableParams
+  ): Promise<T> {
     const { query } = request
-    const expands = query[this.conf.expandQueryParamName!]
-    if (!expands) return resource
-    return recursive(request, resource, params, createExpansionThree(expands))
+    const expands = query[expandable?.queryParamName ?? this.conf.expandQueryParamName!]
+    const selects = query[selectable?.queryParamName ?? this.conf.selectQueryParamName!]
+    if (!expands && !selects) return resource
+
+    const response =
+      expands && expandable
+        ? await this.expandResource(request, resource, expandable, createExpansionThree(expands))
+        : resource
+
+    return selects && (selectable || this.config.enableGlobalSelection)
+      ? this.selectResource(response, selectable, createExpansionThree(selects))
+      : response
   }
 
   /**
@@ -157,5 +113,71 @@ export class ExpandService implements OnModuleInit {
    */
   getMethodExpandableMetadata(target: Function): ExpandableParams | undefined {
     return Reflect.getMetadata(EXPANDABLE_KEY, target)
+  }
+
+  private async transformResource(
+    resource: any,
+    parameters: SelectableParams | ExpandableParams | undefined,
+    transformFn: (resource: any) => Promise<any>
+  ) {
+    try {
+      const root = parameters?.rootField ? resource[parameters.rootField] : resource
+
+      const resources = Array.isArray(root) ? root : [root]
+      const transformations = await Promise.all(resources.map(transformFn))
+
+      const response = Array.isArray(root) ? transformations : transformations[0]
+      return parameters?.rootField ? { ...resource, [parameters.rootField]: response } : response
+    } catch (error: any) {
+      if (this.conf?.enableLogging) {
+        this.logger.error(`Error during transformation: ${error.message}`, error.stack)
+      }
+      throw error
+    }
+  }
+
+  private selectResource(resource: any, selectable: SelectableParams | undefined, three: ExpansionThree) {
+    return this.transformResource(resource, selectable, (current) => maskObjectWithThree(current, three))
+  }
+
+  private async expandResource(request: any, resource: any, expandable: ExpandableParams, three: ExpansionThree) {
+    const expander = this.expanders.get(expandable.target) as Record<string, ExpandMethod>
+    if (!expander) {
+      // This should never happen because of the check in onModuleInit so we just log a warning
+      this.logger.warn(`NestJsExpand missing expander for ${expandable.target.name}`)
+      return resource
+    }
+
+    return this.transformResource(resource, expandable, async (parent: any) => {
+      const extraValues: Record<string, unknown> = {}
+
+      for (const propName in three) {
+        const method = expander[propName]
+        if (!method) {
+          this.logger.warn(`NestJsExpand missing method ${propName} on ${expandable.target.name}`)
+          continue
+        }
+
+        let value = await method.call(expander, { parent, request })
+
+        const subThree = three[propName]
+        if (value && typeof subThree === 'object') {
+          const recursiveParams = this.getMethodExpandableMetadata(method) as ExpandableParams
+          if (recursiveParams) {
+            value = await this.expandResource(request, value, recursiveParams, subThree)
+          } else {
+            this.logger.warn(
+              `NestJsExpand missing @Expandable on ${
+                expandable.target.name
+              }.${propName} to recursively expand ${Object.keys(three)}`
+            )
+          }
+        }
+
+        extraValues[propName] = value
+      }
+
+      return { ...parent, ...extraValues }
+    })
   }
 }
