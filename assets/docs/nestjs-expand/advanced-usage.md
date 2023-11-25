@@ -87,16 +87,17 @@ export class CourseController {
 import { Controller, Get } from '@nestjs/common'
 import { CourseService } from './course.service'
 import { CourseDTO } from './course.dto'
-import { Expandable } from '@cisstech/nestjs-expand'
+import { Expandable, Selectable } from '@cisstech/nestjs-expand'
 
 @Controller('courses')
 export class CourseController {
   constructor(private readonly courseService: CourseService) {}
 
   @Get()
-  @Selectable(CourseDTO, {
+  @Expandable(CourseDTO, {
     rootField: 'items',
   })
+  @Selectable({ rootField: 'items' })
   async getAllCourses(): Promise<{ items: CourseDTO[]; total: number }> {
     const [courses, total] = await this.courseService.getAllCourses()
     return {
