@@ -9,6 +9,7 @@ import { InstructorService } from './instructors/instructor.service'
   imports: [
     NestKitExpandModule.forRoot({
       enableLogging: true,
+      enableGlobalSelection: true,
     }),
   ],
   controllers: [CourseController],

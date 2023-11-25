@@ -22,17 +22,12 @@ The NestJS Expandable Library is a powerful and flexible extension for NestJS ap
 ## Features
 
 - Dynamic Resource Expansion: Easily expand related resources in API responses using query parameters.
+- Dynamic Field Selection: Easily select only the fields you want to get from the API responses using query parameters.
 - Decorator-Based Configuration: Use decorators to mark classes and methods as expanders and expandable, simplifying configuration.
 - Enhanced Metadata Handling: Improved handling of metadata allows for multiple decorators of the same type on the same target.
 - Configuration and Customization: Configure and customize the library to suit your application's specific needs.
 - Error Handling: Graceful handling of errors during expansion with customizable logging options.
 - Tested and Reliable: Extensive unit tests ensure the reliability of the library.
-
-## Planned Features
-
-- Auto expand default fields
-- Select specific fields like in GraphQL
-- Caching system to auto solve N+1 problem
 
 ## License
 
