@@ -22,6 +22,7 @@ The NestJS Expandable Library is a powerful and flexible extension for NestJS ap
 ## Features
 
 - Dynamic Resource Expansion: Easily expand related resources in API responses using query parameters.
+- Dynamic Field Selection: Easily select only the fields you want to get from the API responses using query parameters.
 - Decorator-Based Configuration: Use decorators to mark classes and methods as expanders and expandable, simplifying configuration.
 - Enhanced Metadata Handling: Improved handling of metadata allows for multiple decorators of the same type on the same target.
 - Configuration and Customization: Configure and customize the library to suit your application's specific needs.
@@ -120,6 +121,7 @@ import { UserController } from 'PATH_TO_FILE'
   imports: [
     NestKitExpandModule.forRoot({
       enableLogging: true,
+      enableGlobalSelection: true,
     }),
   ],
   controllers: [UserController],
@@ -131,6 +133,8 @@ export class AppModule {}
 ## Documentation
 
 For detailed documentation, examples, and advanced usage, please refer to the official documentation at <https://cisstech.github.io/nestkit/docs/nestjs-expand/getting-started>
+
+A presentation article is also available [medium](https://medium.com/@mciissee/supercharging-nestjs-apis-a-deep-dive-into-dynamic-resource-expansion-0e932cc7b4f2)
 
 ## License
 

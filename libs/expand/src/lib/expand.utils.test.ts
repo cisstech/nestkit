@@ -47,6 +47,23 @@ describe('ExpandUtils', () => {
       const input = ['*', '-instruction*']
       expect(() => createExpansionThree(input)).toThrow()
     })
+
+    it('should handle comma separated keys', () => {
+      const input = '*,-description,instructor.*,-instructor.id,-instructor.bio,parent.title'
+      const expectedOutput = {
+        '*': true,
+        description: false,
+        instructor: {
+          '*': true,
+          id: false,
+          bio: false,
+        },
+        parent: {
+          title: true,
+        },
+      }
+      expect(createExpansionThree(input)).toEqual(expectedOutput)
+    })
   })
 
   describe('maskObjectWithThree', () => {

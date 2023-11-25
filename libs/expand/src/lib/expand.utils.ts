@@ -8,20 +8,31 @@ export type ExpansionThree = {
   [key: string]: ExpansionThree | boolean
 }
 
+const MINUS_OPERATOR = '-'
+const WILDCARD_OPERATOR = '*'
+
 const expandThreeFromDotNotation = (keys: string | string[]): ExpansionThree => {
   const result: ExpansionThree = {}
   const array = Array.isArray(keys) ? keys : [keys]
-  array.forEach((key) => {
+
+  const mergedCommaSeparatedKeys = array
+    .map((key) => key.trim().split(','))
+    .filter(Boolean)
+    .reduce((acc, val) => acc.concat(val), [])
+
+  mergedCommaSeparatedKeys.forEach((key) => {
     const wildcards = key.match(/\*/g)?.length ?? 0
     if (wildcards > 1) {
-      throw new Error(`NestJsExpand: key "${key}" cannot have more than on occurence of "*".`)
+      throw new Error(`NestJsExpand: key "${key}" cannot have more than on occurence of "${WILDCARD_OPERATOR}".`)
     }
 
-    if (key.includes('-') && key.includes('*')) {
-      throw new Error(`NestJsExpand: key "${key}" cannot contains both wildcard "*" and minus "-" operators.`)
+    if (key.includes(MINUS_OPERATOR) && key.includes(WILDCARD_OPERATOR)) {
+      throw new Error(
+        `NestJsExpand: key "${key}" cannot contains both wildcard "${WILDCARD_OPERATOR}" and minus "${MINUS_OPERATOR}" operators.`
+      )
     }
 
-    const parts = key.replace('-', '').split('.')
+    const parts = key.replace(MINUS_OPERATOR, '').split('.')
     let currentLevel = result
     parts.forEach((part, index) => {
       if (typeof currentLevel[part] !== 'object') {
@@ -30,7 +41,7 @@ const expandThreeFromDotNotation = (keys: string | string[]): ExpansionThree => 
       }
       // If it's the last part of the key, set the value to true
       if (index === parts.length - 1) {
-        currentLevel[part] = !key.startsWith('-')
+        currentLevel[part] = !key.startsWith(MINUS_OPERATOR)
       }
       // Move to the next level
       currentLevel = (currentLevel as ExpansionThree)[part] as ExpansionThree
@@ -111,7 +122,7 @@ export const maskObjectWithThree = (target: any, selection: ExpansionThree): any
   const maskObjectWithThreeRecursive = (currentTarget: any, currentSelection: ExpansionThree): any => {
     const result: any = {}
 
-    if ('*' in currentSelection) {
+    if (WILDCARD_OPERATOR in currentSelection) {
       // add all keys expect explicitly excluded ones
       const targetKeys = Object.keys(currentTarget)
       targetKeys.forEach((key) => {
@@ -121,7 +132,7 @@ export const maskObjectWithThree = (target: any, selection: ExpansionThree): any
       })
     }
 
-    const selectKeys = Object.keys(currentSelection).filter((key) => key !== '*')
+    const selectKeys = Object.keys(currentSelection).filter((key) => key !== WILDCARD_OPERATOR)
     for (const selectKey of selectKeys) {
       if (!currentSelection[selectKey]) continue // explicit select false
       if (!currentTarget[selectKey]) continue // select does not exists on target
