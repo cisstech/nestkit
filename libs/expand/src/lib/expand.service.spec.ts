@@ -174,27 +174,32 @@ describe('ExpandService', () => {
       expect(mockDiscoveryService.providersWithMetaAtKey).toHaveBeenCalledWith(EXPANDER_KEY)
       expect(mockDiscoveryService.methodsAndControllerMethodsWithMetaAtKey).toHaveBeenCalledWith(EXPANDABLE_KEY)
       expect(loggerSpy.mock.calls[0][0]).toBe(
-        'Error during module initialization: Expand: missing providers with @RegisterExpander for : MyDTO used in MyController.missingMethod'
+        'Error during module initialization: missing providers with @RegisterExpander for : MyDTO used in MyController.missingMethod'
       )
     })
   })
 
-  describe('expand', () => {
-    const courseExpander = {
-      parent: jest.fn((context: ExpandContext<Request, CourseDTO>) => {
-        const { parent } = context
-        return parent.parentId ? mockCourses.find((c) => c.id === parent.parentId) : undefined
-      }),
-      instructor: jest.fn((context: ExpandContext<unknown, CourseDTO>) => {
-        return Promise.resolve(mockInstructors.find((i) => i.id === context.parent.instructorId)!)
-      }),
-      relatedCourses: jest.fn((context: ExpandContext<unknown, CourseDTO>) => {
-        return Promise.resolve(mockCourses.filter((c) => context.parent.relatedCourseIds?.includes(c.id)))
-      }),
+  describe('expandAndSelect', () => {
+    const mockCourseExpander = () => {
+      const expander = {
+        parent: jest.fn((context: ExpandContext<Request, CourseDTO>) => {
+          const { parent } = context
+          return parent.parentId ? mockCourses.find((c) => c.id === parent.parentId) : undefined
+        }),
+        instructor: jest.fn((context: ExpandContext<unknown, CourseDTO>) => {
+          return Promise.resolve(mockInstructors.find((i) => i.id === context.parent.instructorId)!)
+        }),
+        relatedCourses: jest.fn((context: ExpandContext<unknown, CourseDTO>) => {
+          return Promise.resolve(mockCourses.filter((c) => context.parent.relatedCourseIds?.includes(c.id)))
+        }),
+      }
+      expander.parent.mockName('parent')
+      expander.instructor.mockName('instructor')
+      expander.relatedCourses.mockName('relatedCourses')
+      return expander
     }
-    courseExpander.parent.mockName('parent')
-    courseExpander.instructor.mockName('instructor')
-    courseExpander.relatedCourses.mockName('relatedCourses')
+
+    let courseExpander = mockCourseExpander()
 
     beforeEach(async () => {
       const mockExpanders = [
@@ -217,6 +222,7 @@ describe('ExpandService', () => {
         }[(method as jest.Mock).getMockName()]
       })
 
+      courseExpander = mockCourseExpander()
       await expandService.onModuleInit()
     })
 
@@ -224,18 +230,41 @@ describe('ExpandService', () => {
       const course = mockCourses[0]
       const instructor = mockInstructors.find((i) => i.id === course.instructorId)
 
-      const result = await expandService.expand<ExpandedCourseDTO>({ query: { expands: ['instructor'] } }, course, {
-        target: CourseDTO,
-      })
+      const result = await expandService.expandAndSelect<ExpandedCourseDTO>(
+        { query: { expands: ['instructor'] } },
+        course,
+        {
+          target: CourseDTO,
+        }
+      )
 
       expect(result.instructor).toStrictEqual(instructor)
+    })
+
+    it('should expand array of entities', async () => {
+      const course1 = mockCourses[1]
+      const course2 = mockCourses[1]
+
+      const instructor1 = mockInstructors.find((i) => i.id === course1.instructorId)
+      const instructor2 = mockInstructors.find((i) => i.id === course2.instructorId)
+
+      const result = await expandService.expandAndSelect<ExpandedCourseDTO[]>(
+        { query: { expands: ['instructor'] } },
+        [course1, course2],
+        {
+          target: CourseDTO,
+        }
+      )
+
+      expect(result[0].instructor).toStrictEqual(instructor1)
+      expect(result[1].instructor).toStrictEqual(instructor2)
     })
 
     it('should expand recursively', async () => {
       const course = mockCourses.find((c) => c.parentId)!
       const parent = mockInstructors.find((i) => i.id === course.parentId)!
 
-      const result = await expandService.expand<ExpandedCourseDTO>(
+      const result = await expandService.expandAndSelect<ExpandedCourseDTO>(
         { query: { expands: ['parent', 'parent.instructor'] } },
         course,
         { target: CourseDTO }
@@ -243,6 +272,93 @@ describe('ExpandService', () => {
 
       expect(result.parent!.id).toStrictEqual(parent.id)
       expect((result.parent as ExpandedCourseDTO).instructor).toBeDefined()
+    })
+
+    it('should use custom expand query param name', async () => {
+      const course = mockCourses[0]
+      const instructor = mockInstructors.find((i) => i.id === course.instructorId)
+
+      const result = await expandService.expandAndSelect<ExpandedCourseDTO>(
+        { query: { customExpands: ['instructor'] } },
+        course,
+        {
+          target: CourseDTO,
+          queryParamName: 'customExpands',
+        }
+      )
+
+      expect(result.instructor).toStrictEqual(instructor)
+    })
+
+    it('should use custom root field name', async () => {
+      const course = mockCourses[0]
+      const instructor = mockInstructors.find((i) => i.id === course.instructorId)
+
+      const result = await expandService.expandAndSelect<{ item: ExpandedCourseDTO }>(
+        { query: { expands: ['instructor'] } },
+        { item: course },
+        {
+          target: CourseDTO,
+          rootField: 'item',
+        }
+      )
+
+      expect(result.item.instructor).toStrictEqual(instructor)
+    })
+
+    it('should select specific properties', async () => {
+      const course = mockCourses[0]
+
+      const result = await expandService.expandAndSelect<ExpandedCourseDTO>(
+        { query: { selects: ['id', 'title'] } },
+        course,
+        undefined,
+        {}
+      )
+
+      expect(result).toStrictEqual({
+        id: course.id,
+        title: course.title,
+      })
+    })
+
+    it('should select specific properties in array of entities', async () => {
+      const course1 = mockCourses[1]
+      const course2 = mockCourses[1]
+
+      const result = await expandService.expandAndSelect<ExpandedCourseDTO[]>(
+        { query: { selects: ['id', 'title'] } },
+        [course1, course2],
+        undefined,
+        {}
+      )
+
+      expect(result).toStrictEqual([
+        {
+          id: course1.id,
+          title: course1.title,
+        },
+        {
+          id: course2.id,
+          title: course2.title,
+        },
+      ])
+    })
+
+    it('should use custom select query param name', async () => {
+      const course = mockCourses[0]
+
+      const result = await expandService.expandAndSelect<ExpandedCourseDTO>(
+        { query: { customSelects: ['id', 'title'] } },
+        course,
+        undefined,
+        { queryParamName: 'customSelects' }
+      )
+
+      expect(result).toStrictEqual({
+        id: course.id,
+        title: course.title,
+      })
     })
   })
 })
