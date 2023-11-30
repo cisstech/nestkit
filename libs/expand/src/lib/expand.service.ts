@@ -120,8 +120,11 @@ export class ExpandService implements OnModuleInit {
     parameters: SelectableParams | ExpandableParams | undefined,
     transformFn: (resource: any) => Promise<any>
   ) {
+    if (!resource) return resource
+
     try {
       const root = parameters?.rootField ? resource[parameters.rootField] : resource
+      if (!root) return resource
 
       const resources = Array.isArray(root) ? root : [root]
       const transformations = await Promise.all(resources.map(transformFn))
@@ -137,7 +140,10 @@ export class ExpandService implements OnModuleInit {
   }
 
   private selectResource(resource: any, selectable: SelectableParams | undefined, three: ExpansionThree) {
-    return this.transformResource(resource, selectable, (current) => maskObjectWithThree(current, three))
+    return this.transformResource(resource, selectable, (parent) => {
+      if (!parent) return parent
+      return maskObjectWithThree(parent, three)
+    })
   }
 
   private async expandResource(request: any, resource: any, expandable: ExpandableParams, three: ExpansionThree) {
@@ -149,6 +155,8 @@ export class ExpandService implements OnModuleInit {
     }
 
     return this.transformResource(resource, expandable, async (parent: any) => {
+      if (!parent) return parent
+
       const extraValues: Record<string, unknown> = {}
 
       for (const propName in three) {
