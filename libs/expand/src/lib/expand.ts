@@ -151,7 +151,7 @@ export const Expandable = (target: Function, config?: Omit<ExpandableParams, 'ta
  *
  * @returns A metadata decorator.
  */
-export const Selectable = (config?: SelectableParams) => SetMetadata(EXPANDABLE_KEY, config)
+export const Selectable = (config?: SelectableParams) => SetMetadata(SELECTABLE_KEY, config ?? {})
 
 /**
  * Injection token for the ExpandConfig.
