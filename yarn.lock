@@ -1549,10 +1549,10 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@cisstech/nge@^16.0.1":
-  version "16.0.1"
-  resolved "https://registry.yarnpkg.com/@cisstech/nge/-/nge-16.0.1.tgz#099f7fcfdbd9fc053c94dc1d2bc6f517d493523b"
-  integrity sha512-2xufpf4REBoB08aBlEud7ojC5Cxju17jXVqSxVVPEv7Lg3hVC/QGI2tM7TNb6cSj9CDmPIZ/Dz1Jx0J82UiDfA==
+"@cisstech/nge@^17.0.0":
+  version "17.0.0"
+  resolved "https://registry.yarnpkg.com/@cisstech/nge/-/nge-17.0.0.tgz#2075e4f40e6b52e6c0fe9a9670e63fb699fb4f9c"
+  integrity sha512-LEq+XWIUj41R+dO2vs6As552wTUv+yWhw649MSuAP5sjBQL1iN+hH/FFI/BG6w8SBXZC4SwjvLPiXc6ImgAQMQ==
   dependencies:
     tslib "^2.3.0"
 
@@ -9466,10 +9466,10 @@ map-obj@^4.0.0:
   resolved "https://registry.yarnpkg.com/map-obj/-/map-obj-4.3.0.tgz#9304f906e93faae70880da102a9f1df0ea8bb05a"
   integrity sha512-hdN1wVrZbb29eBGiGjJbeP8JbKjq1urkHJ/LIP/NY48MZ1QVXUsQBV1G1zvYFHn1XE06cwjBsOI2K3Ulnj1YXQ==
 
-marked@^10.0.0:
-  version "10.0.0"
-  resolved "https://registry.yarnpkg.com/marked/-/marked-10.0.0.tgz#7fe1805bb908433d760e2de0fcc8841a2b2d745c"
-  integrity sha512-YiGcYcWj50YrwBgNzFoYhQ1hT6GmQbFG8SksnYJX1z4BXTHSOrz1GB5/Jm2yQvMg4nN1FHP4M6r03R10KrVUiA==
+marked@^11.0.1:
+  version "11.0.1"
+  resolved "https://registry.yarnpkg.com/marked/-/marked-11.0.1.tgz#f8010ec2e358c0f4efedbac1ed3dbac2c7f46cdc"
+  integrity sha512-P4kDhFEMlvLePBPRwOcMOv6+lYUbhfbSxJFs3Jb4Qx7v6K7l+k8Dxh9CEGfRvK71tL+qIFz5y7Pe4uzt4+/A3A==
 
 mdn-data@2.0.28:
   version "2.0.28"
