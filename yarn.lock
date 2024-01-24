@@ -1549,10 +1549,10 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@cisstech/nge@^17.5.0":
-  version "17.5.0"
-  resolved "https://registry.yarnpkg.com/@cisstech/nge/-/nge-17.5.0.tgz#34ba8aaca7c0915b08e8ed373ec9400862e19ab9"
-  integrity sha512-mFScbtHW+VkAGRX5BjFMA9LQpB+dge8C3xhDQLXigpgtU9nTIn3Y2zxVPPMRRMpED9pft8HWleiyj6rIS76qcQ==
+"@cisstech/nge@^17.6.1":
+  version "17.6.1"
+  resolved "https://registry.yarnpkg.com/@cisstech/nge/-/nge-17.6.1.tgz#2820a76bc99dd706c5b601f12d239ffc8898ed4c"
+  integrity sha512-tvjK/jY3JdiyoChgstoEHoG0XkV3AA3OwdSqyOOcrgYlekorkHEuCOgYtGqfsgKDH6Rbqx6n3LTdvTVQT4Cd9Q==
   dependencies:
     tslib "^2.3.0"
 
