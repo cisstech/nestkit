@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "NestKit is a collection of libraries for NestJS developers.",
   "keywords": [
     "NestJS"
@@ -43,7 +43,10 @@
     "clear:webpack": "rimraf -rf ./node_modules/.cache/webpack",
     "clear:dist": "rimraf -rf ./dist/",
     "report": "nx report",
-    "release": "standard-version"
+    "release": "standard-version",
+    "release:major": "standard-version --release-as major",
+    "release:minor": "standard-version --release-as minor",
+    "release:patch": "standard-version --release-as patch"
   },
   "private": true,
   "dependencies": {
