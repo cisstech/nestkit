@@ -18,7 +18,7 @@ import { ExpansionThree, createExpansionThree, maskObjectWithThree } from './exp
 @Injectable()
 export class ExpandService implements OnModuleInit {
   private readonly logger = new Logger(ExpandService.name)
-  private readonly expanders = new Map<Function, any>()
+  private readonly expanders = new Map<Function, Record<string, ExpandMethod>[]>()
 
   /**
    * The configuration for the module.
@@ -50,7 +50,9 @@ export class ExpandService implements OnModuleInit {
       ])
 
       expanders.forEach((expander) => {
-        this.expanders.set(expander.meta, expander.discoveredClass.instance)
+        const existing = this.expanders.get(expander.meta) ?? []
+        existing.push(expander.discoveredClass.instance as Record<string, ExpandMethod>)
+        this.expanders.set(expander.meta, existing)
       })
 
       const missing = expandables
@@ -147,8 +149,8 @@ export class ExpandService implements OnModuleInit {
   }
 
   private async expandResource(request: any, resource: any, expandable: ExpandableParams, three: ExpansionThree) {
-    const expander = this.expanders.get(expandable.target) as Record<string, ExpandMethod>
-    if (!expander) {
+    const expanders = this.expanders.get(expandable.target)
+    if (!expanders) {
       // This should never happen because of the check in onModuleInit so we just log a warning
       this.logger.warn(`NestJsExpand missing expander for ${expandable.target.name}`)
       return resource
@@ -160,12 +162,13 @@ export class ExpandService implements OnModuleInit {
       const extraValues: Record<string, unknown> = {}
 
       for (const propName in three) {
-        const method = expander[propName]
-        if (!method) {
-          this.logger.warn(`NestJsExpand missing method ${propName} on ${expandable.target.name}`)
+        const expander = expanders?.find((e) => propName in e)
+        if (!expander) {
+          this.logger.warn(`NestJsExpand missing method "${propName}" on ${expandable.target.name}`)
           continue
         }
 
+        const method = expander[propName]
         let value = await method.call(expander, { parent, request })
 
         const subThree = three[propName]
