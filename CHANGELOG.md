@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/cisstech/nestkit/compare/v1.0.3...v1.2.0) (2024-02-05)
+
+
+### Features
+
+* **expand:** multiple expanders on same dto ([cf82957](https://github.com/cisstech/nestkit/commit/cf82957a17630a8ffaf2dc2d1a9e4985c9f0a3cb))
+
 ## [1.1.0](https://github.com/cisstech/nestkit/compare/v1.0.3...v1.1.0) (2024-02-05)
 
 
