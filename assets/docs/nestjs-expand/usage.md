@@ -76,6 +76,10 @@ export class CourseExpander {
 }
 ```
 
+:::+ Multiple Expanders
+You can define as many expanders as needed for the same DTO.
+:::
+
 ## Define Services
 
 ```typescript
