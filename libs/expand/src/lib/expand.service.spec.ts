@@ -150,7 +150,7 @@ describe('ExpandService', () => {
       expect(mockDiscoveryService.methodsAndControllerMethodsWithMetaAtKey).toHaveBeenCalledWith(EXPANDABLE_KEY)
 
       mockExpanders.forEach((expander) => {
-        expect(expandService['expanders'].get(expander.meta)).toBe(expander.discoveredClass.instance)
+        expect(expandService['expanders'].get(expander.meta)?.[0]).toBe(expander.discoveredClass.instance)
       })
 
       expect(loggerSpy).not.toHaveBeenCalled() // No errors should be logged
