@@ -92,6 +92,7 @@ export class ExpandService implements OnModuleInit {
     selectable?: SelectableParams
   ): Promise<T> {
     const { query } = request
+    if (!query) return resource
     const expands = query[expandable?.queryParamName ?? this.conf.expandQueryParamName!]
     const selects = query[selectable?.queryParamName ?? this.conf.selectQueryParamName!]
     if (!expands && !selects) return resource
