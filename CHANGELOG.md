@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.1](https://github.com/cisstech/nestkit/compare/v1.2.0...v1.2.1) (2024-03-04)
+
+
+### Bug Fixes
+
+* expand service should work event if query is undefined ([5e2dbae](https://github.com/cisstech/nestkit/commit/5e2dbaed680542e27cbbde9a73783844b28a5c1f))
+
 ## [1.2.0](https://github.com/cisstech/nestkit/compare/v1.0.3...v1.2.0) (2024-02-05)
 
 
