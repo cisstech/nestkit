@@ -120,6 +120,8 @@ export const createExpansionThree = (object?: string | string[] | ExpansionThree
  */
 export const maskObjectWithThree = (target: any, selection: ExpansionThree): any => {
   const maskObjectWithThreeRecursive = (currentTarget: any, currentSelection: ExpansionThree): any => {
+    if (currentTarget == null) return currentTarget
+
     const result: any = {}
 
     if (WILDCARD_OPERATOR in currentSelection) {
@@ -135,14 +137,14 @@ export const maskObjectWithThree = (target: any, selection: ExpansionThree): any
     const selectKeys = Object.keys(currentSelection).filter((key) => key !== WILDCARD_OPERATOR)
     for (const selectKey of selectKeys) {
       if (!currentSelection[selectKey]) continue // explicit select false
-      if (!currentTarget[selectKey]) continue // select does not exists on target
+      if (!(selectKey in currentTarget)) continue // select does not exists on target
 
       const value =
         typeof currentSelection[selectKey] === 'object'
           ? maskObjectWithThreeRecursive(currentTarget[selectKey], currentSelection[selectKey] as ExpansionThree)
           : currentTarget[selectKey]
 
-      if (value) {
+      if (value != null) {
         result[selectKey] = value
       }
     }
