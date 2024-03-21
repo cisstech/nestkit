@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/cisstech/nestkit/compare/v1.2.1...v1.3.0) (2024-03-21)
+
+
+### Features
+
+* **nestjs-expand:** support array, nullable props selection ([efccd77](https://github.com/cisstech/nestkit/commit/efccd776dafe03215531382ede8439bf0e96b106))
+
+
+### Bug Fixes
+
+* **nestjs-expand:** props with false values ignored during selection ([a98f2e0](https://github.com/cisstech/nestkit/commit/a98f2e0375297ef63135eac5fc44fb13f580da60))
+
 ### [1.2.1](https://github.com/cisstech/nestkit/compare/v1.2.0...v1.2.1) (2024-03-04)
 
 
