@@ -157,9 +157,7 @@ export const maskObjectWithThree = (target: any, selection: ExpansionThree): any
           ? maskObjectWithThreeRecursive(currentTarget[selectKey], currentSelection[selectKey] as ExpansionThree)
           : currentTarget[selectKey]
 
-      if (value != null) {
-        maskedTarget[selectKey] = value
-      }
+      maskedTarget[selectKey] = value
     }
 
     return maskedTarget
