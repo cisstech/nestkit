@@ -73,7 +73,11 @@ export const createExpansionThree = (object?: string | string[] | ExpansionThree
 
 /**
  * Masks an object with a given selection three.
- *
+ * @remarks
+ * - Empty selection tree will return the target object as is.
+ * - Array values are also supported. The selection tree at the array level will be applied to each item in the array.
+ * - If a key is not present in the selection tree, it will be excluded from the result.
+ * - `null` or `undefined` values will be returned as is.
  * @example
  * ```ts
  *
@@ -122,19 +126,28 @@ export const maskObjectWithThree = (target: any, selection: ExpansionThree): any
   const maskObjectWithThreeRecursive = (currentTarget: any, currentSelection: ExpansionThree): any => {
     if (currentTarget == null) return currentTarget
 
-    const result: any = {}
+    // If the selection is empty, return the target as is
+    const selectionKeys = Object.keys(currentSelection)
+    if (selectionKeys.length === 0) return currentTarget
 
+    if (Array.isArray(currentTarget)) {
+      return currentTarget.map((item) => maskObjectWithThreeRecursive(item, currentSelection))
+    }
+
+    const maskedTarget: any = {}
+
+    // add all keys expect explicitly excluded ones if wildcard is present
     if (WILDCARD_OPERATOR in currentSelection) {
-      // add all keys expect explicitly excluded ones
       const targetKeys = Object.keys(currentTarget)
       targetKeys.forEach((key) => {
         if (currentSelection[key] !== false) {
-          result[key] = currentTarget[key]
+          maskedTarget[key] = currentTarget[key]
         }
       })
     }
 
-    const selectKeys = Object.keys(currentSelection).filter((key) => key !== WILDCARD_OPERATOR)
+    // handle explicit keys and minus operator
+    const selectKeys = selectionKeys.filter((key) => key !== WILDCARD_OPERATOR)
     for (const selectKey of selectKeys) {
       if (!currentSelection[selectKey]) continue // explicit select false
       if (!(selectKey in currentTarget)) continue // select does not exists on target
@@ -145,11 +158,11 @@ export const maskObjectWithThree = (target: any, selection: ExpansionThree): any
           : currentTarget[selectKey]
 
       if (value != null) {
-        result[selectKey] = value
+        maskedTarget[selectKey] = value
       }
     }
 
-    return result
+    return maskedTarget
   }
   return maskObjectWithThreeRecursive(target, selection)
 }
