@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/cisstech/nestkit/compare/v1.3.0...v1.4.0) (2024-07-20)
+
+
+### Bug Fixes
+
+* **nestjs-expand:** not working with controllers using res.json ([2774cdb](https://github.com/cisstech/nestkit/commit/2774cdbbcec7a5e8ad7b699dd8ff5a26e0817818))
+* **nestjs-expand:** nullable fields are not selected ([6594f59](https://github.com/cisstech/nestkit/commit/6594f590930d30809a39f5191ad66943a2aaca39))
+
 ## [1.3.0](https://github.com/cisstech/nestkit/compare/v1.2.1...v1.3.0) (2024-03-21)
 
 
