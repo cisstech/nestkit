@@ -2,7 +2,6 @@
 
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common'
 import { Observable } from 'rxjs'
-import { map } from 'rxjs/operators'
 import { EXPANDABLE_KEY, SELECTABLE_KEY } from './expand'
 import { ExpandService } from './expand.service'
 
@@ -25,11 +24,14 @@ export class ExpandInterceptor implements NestInterceptor {
 
     if (!expandable && !selectable && !this.expandService.config.enableGlobalSelection) return next.handle()
 
-    const req = context.switchToHttp().getRequest()
-    return next.handle().pipe(
-      map(async (res) => {
-        return this.expandService.expandAndSelect(req, res, expandable, selectable)
-      })
-    )
+    const http = context.switchToHttp()
+    const req = http.getRequest()
+    const res = http.getResponse()
+
+    const original = res.json
+    res.json = async (body: unknown) => {
+      return original.call(res, await this.expandService.expandAndSelect(req, body, expandable, selectable))
+    }
+    return next.handle()
   }
 }
