@@ -1,4 +1,4 @@
-import{B as r,C as h}from"./chunk-5ZAT7UK6.js";import{Ba as c,S as o,Z as n,la as a,y as i}from"./chunk-WMB3L5RM.js";var p=(()=>{let t=class t{constructor(){this.markdown=`
+import{B as r,C as h}from"./chunk-V6MS2JAY.js";import{Ca as c,V as o,_ as n,pa as a,z as i}from"./chunk-KLNRJBR4.js";var p=(()=>{let t=class t{constructor(){this.markdown=`
   <h1 align="center"> Nest KIT</h1>
 
   <div align="center">
