@@ -25,6 +25,7 @@
     "nx": "nx",
     "npm": "npm",
     "start": "nx run-many --target=serve --parallel",
+    "build": "yarn build:libs && yarn build:api && yarn build:app",
     "build:api": "nx run api:build --prod",
     "build:app": "nx run app:build --prod  --base-href='https://cisstech.github.io/nestkit/'",
     "build:libs": "nx run-many --target=build --projects=expand --configuration=production",
