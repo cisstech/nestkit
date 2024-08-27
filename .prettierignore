@@ -7,3 +7,5 @@
 /.vscode
 /tmp
 /node_modules
+
+/.nx/workspace-data

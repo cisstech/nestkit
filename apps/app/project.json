@@ -19,8 +19,16 @@
         "assets": [
           "apps/app/src/favicon.ico",
           "apps/app/src/assets",
-          { "glob": "**/*", "input": "./node_modules/@cisstech/nge/assets/monaco", "output": "./assets/vendors/nge/monaco/" },
-          { "glob": "**/*", "input": "./node_modules/@cisstech/nge/assets/markdown/", "output": "./assets/vendors/nge/markdown/" }
+          {
+            "glob": "**/*",
+            "input": "./node_modules/@cisstech/nge/assets/monaco",
+            "output": "./assets/vendors/nge/monaco/"
+          },
+          {
+            "glob": "**/*",
+            "input": "./node_modules/@cisstech/nge/assets/markdown/",
+            "output": "./assets/vendors/nge/markdown/"
+          }
         ],
         "styles": ["apps/app/src/styles.scss"],
         "scripts": []
@@ -71,11 +79,7 @@
       }
     },
     "lint": {
-      "executor": "@nx/eslint:lint",
-      "outputs": ["{options.outputFile}"],
-      "options": {
-        "lintFilePatterns": ["apps/app/**/*.ts", "apps/app/**/*.html"]
-      }
+      "executor": "@nx/eslint:lint"
     },
     "test": {
       "executor": "@nx/jest:jest",

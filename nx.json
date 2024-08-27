@@ -6,12 +6,6 @@
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     },
-    "lint": {
-      "cache": true
-    },
-    "e2e": {
-      "cache": true
-    },
     "@nx/jest:jest": {
       "cache": true,
       "inputs": ["default", "^production", "{workspaceRoot}/jest.preset.js"],
@@ -24,6 +18,10 @@
           "codeCoverage": true
         }
       }
+    },
+    "@nx/eslint:lint": {
+      "cache": true,
+      "inputs": ["default", "{workspaceRoot}/.eslintrc.json", "{workspaceRoot}/tools/eslint-rules/**/*"]
     }
   },
   "namedInputs": {
@@ -52,5 +50,6 @@
     "@nx/angular:component": {
       "style": "scss"
     }
-  }
+  },
+  "useInferencePlugins": false
 }

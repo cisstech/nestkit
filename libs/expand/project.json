@@ -3,6 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/expand/src",
   "projectType": "library",
+  "tags": ["scope:expand", "type:lib"],
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
@@ -15,16 +16,8 @@
         "assets": ["libs/expand/*.md"]
       }
     },
-    "publish": {
-      "command": "node tools/scripts/publish.mjs expand {args.ver} {args.tag}",
-      "dependsOn": ["build"]
-    },
     "lint": {
-      "executor": "@nx/eslint:lint",
-      "outputs": ["{options.outputFile}"],
-      "options": {
-        "lintFilePatterns": ["libs/expand/**/*.ts", "libs/expand/package.json"]
-      }
+      "executor": "@nx/eslint:lint"
     },
     "test": {
       "executor": "@nx/jest:jest",
@@ -33,6 +26,5 @@
         "jestConfig": "libs/expand/jest.config.ts"
       }
     }
-  },
-  "tags": ["scope:expand", "type:lib"]
+  }
 }
