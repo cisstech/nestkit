@@ -87,6 +87,15 @@
       "options": {
         "jestConfig": "apps/app/jest.config.ts"
       }
+    },
+    "deploy": {
+      "executor": "angular-cli-ghpages:deploy",
+      "options": {
+        "dir": "./dist/apps/app/browser",
+        "repo": "https://github.com/cisstech/nestkit.git",
+        "buildTarget": "app:build:production",
+        "baseHref": "https://cisstech.github.io/nestkit/"
+      }
     }
   }
 }
