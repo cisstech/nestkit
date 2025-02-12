@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## 1.6.0 (2025-02-12)
+
+
+### Bug Fixes
+
+* **nestjs-expand:** handle errors during expansion ([dc337e7](https://github.com/cisstech/nestkit/commit/dc337e78111fde7bf8de0c92913d7fceaea18f72))
+
 ## 1.5.0 (2024-08-27)
 
 ## [1.4.0](https://github.com/cisstech/nestkit/compare/v1.3.0...v1.4.0) (2024-07-20)
