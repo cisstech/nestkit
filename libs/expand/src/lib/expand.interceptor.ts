@@ -1,12 +1,14 @@
 // expand.interceptor.ts
 
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common'
+import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from '@nestjs/common'
 import { Observable } from 'rxjs'
 import { EXPANDABLE_KEY, SELECTABLE_KEY } from './expand'
 import { ExpandService } from './expand.service'
 
 @Injectable()
 export class ExpandInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(ExpandService.name)
+
   constructor(private readonly expandService: ExpandService) {}
 
   /**
@@ -30,7 +32,14 @@ export class ExpandInterceptor implements NestInterceptor {
 
     const original = res.json
     res.json = async (body: unknown) => {
-      return original.call(res, await this.expandService.expandAndSelect(req, body, expandable, selectable))
+      if (res.statusCode && res.statusCode >= 400) return original.call(res, body)
+      try {
+        const expanded = await this.expandService.expandAndSelect(req, body, expandable, selectable)
+        return original.call(res, expanded)
+      } catch (error) {
+        this.logger.error(error)
+        return original.call(res, body)
+      }
     }
     return next.handle()
   }
