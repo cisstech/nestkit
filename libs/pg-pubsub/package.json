@@ -14,10 +14,8 @@
   },
   "peerDependencies": {
     "@nestjs/common": "^10.x",
-    "@nestjs/core": "^10.x",
     "@golevelup/nestjs-discovery": "^4.x",
     "typeorm": "^0.3.x",
-    "pg": "^8.x",
     "pg-listen": "^1.x"
   },
   "type": "commonjs",
