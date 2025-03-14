@@ -8,6 +8,13 @@ on:
 
 env:
   NODE_VERSION: 22
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: nestkit
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  REDIS_HOST: localhost
+  REDIS_PORT: 6379
 
 jobs:
   prepare:
@@ -42,11 +49,61 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     needs: prepare
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
     steps:
       - uses: DerYeger/yarn-setup-action@master
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # Create default .env file
+      - name: Create .env file
+        run: |
+          echo "POSTGRES_USER=${{ env.POSTGRES_USER }}" > .env
+          echo "POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }}" >> .env
+          echo "POSTGRES_DB=${{ env.POSTGRES_DB }}" >> .env
+          echo "POSTGRES_HOST=${{ env.POSTGRES_HOST }}" >> .env
+          echo "POSTGRES_PORT=${{ env.POSTGRES_PORT }}" >> .env
+          echo "REDIS_HOST=${{ env.REDIS_HOST }}" >> .env
+          echo "REDIS_PORT=${{ env.REDIS_PORT }}" >> .env
+          echo "DATABASE_URL=postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}" >> .env
+          echo "TEST_DATABASE_URL=postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}" >> .env
+          cat .env
+
+      # Create test database
+      #- name: Install PostgreSQL client
+      #  run: |
+      #    sudo apt-get update
+      #    sudo apt-get install --yes postgresql-client
+
+      #- name: Create test database
+      #  run: |
+      #    PGPASSWORD=${{ env.POSTGRES_PASSWORD }} psql -h localhost -U ${{ env.POSTGRES_USER }} -d ${{ env.POSTGRES_DB }} -c "CREATE DATABASE nestkit_test;"
+
+      # Run tests
       - run: yarn test
 
       - name: Upload coverage to Codecov
