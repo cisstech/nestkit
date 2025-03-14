@@ -3,7 +3,11 @@
   "version": "1.5.0",
   "description": "NestKit is a collection of libraries for NestJS developers.",
   "keywords": [
-    "NestJS"
+    "NestJS",
+    "PubSub",
+    "Redis",
+    "TypeORM",
+    "PostgreSQL"
   ],
   "repository": {
     "type": "git",
@@ -24,6 +28,7 @@
   "scripts": {
     "nx": "nx",
     "npm": "npm",
+    "typeorm": "ts-node --transpile-only -P tsconfig.base.json -r tsconfig-paths/register -O '{\"module\":\"commonjs\"}' ./node_modules/typeorm/cli.js -d ./apps/api/src/app/database/database.cli.ts",
     "start": "nx run-many --target=serve --parallel",
     "build": "yarn build:libs && yarn build:api && yarn build:app",
     "build:api": "nx run api:build --prod",
@@ -64,17 +69,27 @@
     "@cisstech/nge": "^18.0.4",
     "@golevelup/nestjs-discovery": "^4.0.0",
     "@nestjs/common": "^10.0.2",
+    "@nestjs/config": "^3.1.1",
     "@nestjs/core": "^10.0.2",
     "@nestjs/platform-express": "^10.0.2",
-    "@nestjs/swagger": "^7.1.16",
+    "@nestjs/platform-socket.io": "^10.0.2",
+    "@nestjs/swagger": "^8.1.1",
+    "@nestjs/typeorm": "^10.0.2",
+    "@nestjs/websockets": "^10.0.2",
     "axios": "1.7.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
+    "ioredis": "^5.6.0",
     "marked": "^11.0.1",
     "monaco-editor": "^0.44.0",
+    "pg": "^8.14.0",
+    "pg-listen": "^1.7.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "tslib": "^2.3.0",
+    "typeorm": "^0.3.21",
     "zone.js": "0.14.8"
   },
   "devDependencies": {
@@ -156,5 +171,6 @@
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }
