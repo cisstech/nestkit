@@ -1,5 +1,11 @@
 # Installation
 
 ```bash
-yarn add @golevelup/nestjs-discovery @cisstech/nestjs-expand
+yarn add @cisstech/nestjs-expand
+```
+
+or using npm
+
+```bash
+npm install @cisstech/nestjs-expand
 ```

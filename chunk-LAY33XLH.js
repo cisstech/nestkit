@@ -19,6 +19,7 @@ import{B as r,C as h}from"./chunk-V6MS2JAY.js";import{Ca as c,V as o,_ as n,pa a
   | Package                                    | Description                                                  | Version                                                                                                                       |
   | ------------------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
   | [\`@cisstech/nestjs-expand\`](docs/nestjs-expand) | A NestJS module to build Dynamic Resource Expansion for APIs | [![version](https://img.shields.io/npm/v/@cisstech/nestjs-expand.svg)](https://www.npmjs.com/package/@cisstech/nestjs-expand) |
+  | [\`@cisstech/nestjs-pg-pubsub\`](docs/nestjs-pg-pubsub) | Real-time PostgreSQL notifications using PubSub | [![version](https://img.shields.io/npm/v/@cisstech/nestjs-pg-pubsub.svg)](https://www.npmjs.com/package/@cisstech/nestjs-pg-pubsub) |
 
   ## \u{1F4C4} Docs
 
@@ -32,6 +33,12 @@ import{B as r,C as h}from"./chunk-V6MS2JAY.js";import{Ca as c,V as o,_ as n,pa a
   git clone https://github.com/cisstech/nestkit
   cd nestkit
   yarn
+  \`\`\`
+
+  - Start docker
+
+  \`\`\`bash
+  docker-compose up -d
   \`\`\`
 
   - Serve demo
@@ -69,4 +76,4 @@ import{B as r,C as h}from"./chunk-V6MS2JAY.js";import{Ca as c,V as o,_ as n,pa a
   ## \u2728 License
 
   MIT \xA9 [Mamadou Cisse](https://github.com/cisstech)
-  `}};t.\u0275fac=function(e){return new(e||t)},t.\u0275cmp=i({type:t,selectors:[["app-home"]],standalone:!0,features:[a],decls:1,vars:1,consts:[[3,"data"]],template:function(e,d){e&1&&n(0,"nge-markdown",0),e&2&&o("data",d.markdown)},dependencies:[c,h,r],styles:["[_nghost-%COMP%]{display:block;width:100vw;height:100vh;padding:2rem 8rem;box-sizing:border-box}@media only screen and (max-width: 600px){[_nghost-%COMP%]{padding:2rem}}"],changeDetection:0});let s=t;return s})();var y=[{path:"",component:p}];export{y as default};
+  `}};t.\u0275fac=function(e){return new(e||t)},t.\u0275cmp=i({type:t,selectors:[["app-home"]],standalone:!0,features:[a],decls:1,vars:1,consts:[[3,"data"]],template:function(e,d){e&1&&n(0,"nge-markdown",0),e&2&&o("data",d.markdown)},dependencies:[c,h,r],styles:["[_nghost-%COMP%]{display:block;width:100vw;height:100vh;padding:2rem 8rem;box-sizing:border-box}@media only screen and (max-width: 600px){[_nghost-%COMP%]{padding:2rem}}"],changeDetection:0});let s=t;return s})();var w=[{path:"",component:p}];export{w as default};
