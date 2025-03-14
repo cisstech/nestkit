@@ -1,0 +1,108 @@
+@baseUrl = http://localhost:3000/api/v1
+@userIdOne = {{createUser.response.body.id}}
+@userIdTwo = {{createSecondUser.response.body.id}}
+@notificationIdOne = {{createNotification.response.body.id}}
+@notificationIdTwo = {{createSecondNotification.response.body.id}}
+
+### Create first user
+# @name createUser
+POST {{baseUrl}}/users HTTP/1.1
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com"
+}
+
+### Create second user
+# @name createSecondUser
+POST {{baseUrl}}/users HTTP/1.1
+Content-Type: application/json
+
+{
+  "name": "Jane Smith",
+  "email": "jane.smith@example.com"
+}
+
+### Get all users
+GET {{baseUrl}}/users HTTP/1.1
+
+### Get user by id
+GET {{baseUrl}}/users/{{userIdOne}} HTTP/1.1
+
+### Create notification for first user
+# @name createNotification
+POST {{baseUrl}}/notifications HTTP/1.1
+Content-Type: application/json
+
+{
+  "title": "Welcome!",
+  "content": "Welcome to our platform, John!",
+  "userId": "{{userIdOne}}",
+  "type": "info"
+}
+
+### Create another notification for first user
+# @name createSecondNotification
+POST {{baseUrl}}/notifications HTTP/1.1
+Content-Type: application/json
+
+{
+  "title": "Action Required",
+  "content": "Please verify your email address.",
+  "userId": "{{userIdOne}}",
+  "type": "warning"
+}
+
+### Create notification for second user
+# @name createNotificationForSecondUser
+POST {{baseUrl}}/notifications HTTP/1.1
+Content-Type: application/json
+
+{
+  "title": "Welcome!",
+  "content": "Welcome to our platform, Jane!",
+  "userId": "{{userIdTwo}}",
+  "type": "info"
+}
+
+### Get all notifications
+GET {{baseUrl}}/notifications HTTP/1.1
+
+### Get notifications for first user
+GET {{baseUrl}}/notifications/user/{{userIdOne}} HTTP/1.1
+
+### Get notifications for second user
+GET {{baseUrl}}/notifications/user/{{userIdTwo}} HTTP/1.1
+
+### Mark notification as read
+# This will trigger an UPDATE event that will be caught by the PgPubSub listener
+PUT {{baseUrl}}/notifications/{{notificationIdOne}}/read HTTP/1.1
+
+### Delete a notification
+# This will trigger a DELETE event that will be caught by the PgPubSub listener
+DELETE {{baseUrl}}/notifications/{{notificationIdOne}} HTTP/1.1
+
+### Client-Side WebSocket Connection Example (for documentation purposes only)
+# Use this JavaScript in your client to connect to the WebSocket server
+# ```javascript
+# import { io } from 'socket.io-client';
+#
+# // Connect to WebSocket server
+# const socket = io('http://localhost:3000/notifications', {
+#   query: { userId: '{{userIdOne}}' }
+# });
+#
+# // Listen for notification events
+# socket.on('new-notification', (notification) => {
+#   console.log('New notification received:', notification);
+# });
+#
+# socket.on('notification-status-changed', (data) => {
+#   console.log('Notification status changed:', data);
+# });
+#
+# socket.on('notification-deleted', (data) => {
+#   console.log('Notification was deleted:', data);
+# });
+# ```

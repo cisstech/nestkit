@@ -1,5 +1,3 @@
-// expand.module
-
 import { DynamicModule, Global, Module } from '@nestjs/common'
 
 import { DiscoveryModule } from '@golevelup/nestjs-discovery'

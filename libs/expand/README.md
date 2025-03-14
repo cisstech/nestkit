@@ -32,7 +32,7 @@ The NestJS Expandable Library is a powerful and flexible extension for NestJS ap
 ## Installation
 
 ```bash
-yarn add @golevelup/nestjs-discovery @cisstech/nestjs-expand
+yarn add @cisstech/nestjs-expand
 ```
 
 ## Usage

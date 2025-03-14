@@ -158,7 +158,7 @@ export const Selectable = (config?: SelectableParams) => SetMetadata(SELECTABLE_
  */
 export const EXPAND_CONFIG = Symbol('EXPAND_CONFIG')
 
-export const DEFAULT_EXPAND_CONFIG: ExpandConfig = {
+export const DEFAULT_EXPAND_CONFIG: Required<ExpandConfig> = {
   enableLogging: true,
   enableGlobalSelection: false,
   selectQueryParamName: 'selects',

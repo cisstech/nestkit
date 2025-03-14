@@ -93,8 +93,15 @@ export class ExpandService implements OnModuleInit {
   ): Promise<T> {
     const { query } = request
     if (!query) return resource
-    const expands = query[expandable?.queryParamName ?? this.conf.expandQueryParamName!]
-    const selects = query[selectable?.queryParamName ?? this.conf.selectQueryParamName!]
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const expands =
+      query[
+        expandable?.queryParamName ?? (this.conf.expandQueryParamName || DEFAULT_EXPAND_CONFIG.expandQueryParamName)
+      ]
+    const selects =
+      query[
+        selectable?.queryParamName ?? (this.conf.selectQueryParamName || DEFAULT_EXPAND_CONFIG.selectQueryParamName)
+      ]
     if (!expands && !selects) return resource
 
     const response =
