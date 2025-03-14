@@ -152,6 +152,13 @@ findAll() {
 }
 ```
 
+## Documentation
+
+For detailed documentation, examples, and advanced usage, please refer to the official documentation at <https://cisstech.github.io/nestkit/docs/nestjs-expand/getting-started>
+
+A presentation article is also available [medium](https://medium.com/@mciissee/supercharging-nestjs-apis-a-deep-dive-into-dynamic-resource-expansion-0e932cc7b4f2)
+Example with per-endpoint error policy:
+
 ## License
 
 MIT © [Mamadou Cisse](https://github.com/cisstech)
