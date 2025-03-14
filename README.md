@@ -20,12 +20,15 @@ A collection of libraries for NestJS developers.
 | Package                                    | Description                                                  | Version                                                                                                                       |
 | ------------------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
 | [`@cisstech/nestjs-expand`](./libs/expand) | A NestJS module to build Dynamic Resource Expansion for APIs | [![version](https://img.shields.io/npm/v/@cisstech/nestjs-expand.svg)](https://www.npmjs.com/package/@cisstech/nestjs-expand) |
+| [`@cisstech/nestjs-pg-pubsub`](https://github.com/cisstech/nestkit/tree/main/libs/pg-pubsub) | Real-time PostgreSQL notifications using PubSub | [![npm version](https://badge.fury.io/js/@cisstech%2Fnestjs-pg-pubsub.svg)](https://www.npmjs.com/package/@cisstech/nestjs-pg-pubsub) | [Documentation](https://cisstech.github.io/nestkit/docs/nestjs-pg-pubsub/getting-started) |
 
 ## 📄 Docs
 
-Presentation available at [https://medium.com/@mciissee](https://medium.com/@mciissee/supercharging-nestjs-apis-a-deep-dive-into-dynamic-resource-expansion-0e932cc7b4f2)
-
 Documentation available at [https://cisstech.github.io/nestkit/](https://cisstech.github.io/nestkit/)
+
+## 📄 Articles
+
+- [NestJS Expand](https://medium.com/@mciissee/supercharging-nestjs-apis-a-deep-dive-into-dynamic-resource-expansion-0e932cc7b4f2)
 
 ## ⌨️ Development
 
@@ -35,6 +38,28 @@ Documentation available at [https://cisstech.github.io/nestkit/](https://cisstec
 git clone https://github.com/cisstech/nestkit
 cd nestkit
 yarn
+```
+
+- For optimal usage with the sample application, set up the following environment variables in a `.env` file in the root of the project:
+
+```env
+# PostgreSQL
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=your_database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/your_database
+
+# Redis (for distributed lock service)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
+
+- Start docker
+
+```bash
+docker-compose up -d
 ```
 
 - Serve demo

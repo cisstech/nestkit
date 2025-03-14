@@ -24,7 +24,8 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@cisstech/nestjs-expand": ["libs/expand/src/index.ts"]
+      "@cisstech/nestjs-expand": ["libs/expand/src/index.ts"],
+      "@cisstech/nestjs-pg-pubsub": ["libs/pg-pubsub/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
