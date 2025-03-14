@@ -32,6 +32,7 @@ export class HomeComponent {
   | Package                                    | Description                                                  | Version                                                                                                                       |
   | ------------------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
   | [\`@cisstech/nestjs-expand\`](docs/nestjs-expand) | A NestJS module to build Dynamic Resource Expansion for APIs | [![version](https://img.shields.io/npm/v/@cisstech/nestjs-expand.svg)](https://www.npmjs.com/package/@cisstech/nestjs-expand) |
+  | [\`@cisstech/nestjs-pg-pubsub\`](docs/nestjs-pg-pubsub) | Real-time PostgreSQL notifications using PubSub | [![version](https://img.shields.io/npm/v/@cisstech/nestjs-pg-pubsub.svg)](https://www.npmjs.com/package/@cisstech/nestjs-pg-pubsub) |
 
   ## 📄 Docs
 
@@ -45,6 +46,12 @@ export class HomeComponent {
   git clone https://github.com/cisstech/nestkit
   cd nestkit
   yarn
+  \`\`\`
+
+  - Start docker
+
+  \`\`\`bash
+  docker-compose up -d
   \`\`\`
 
   - Serve demo

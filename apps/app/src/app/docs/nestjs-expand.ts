@@ -28,7 +28,6 @@ export const NestJsExpandDoc: NgeDocSettings = {
       renderer: 'assets/docs/nestjs-expand/getting-started.md',
       actions: [editInGithubAction('apps/app/src/assets/docs/nestjs-expand/getting-started.md')],
     },
-    //projects/demo/src/assets/docs/nge-markdown/
     {
       title: 'Installation',
       href: 'installation',
