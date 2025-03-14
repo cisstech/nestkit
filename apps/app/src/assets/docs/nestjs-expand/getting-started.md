@@ -26,8 +26,8 @@ The NestJS Expandable Library is a powerful and flexible extension for NestJS ap
 - Decorator-Based Configuration: Use decorators to mark classes and methods as expanders and expandable, simplifying configuration.
 - Enhanced Metadata Handling: Improved handling of metadata allows for multiple decorators of the same type on the same target.
 - Configuration and Customization: Configure and customize the library to suit your application's specific needs.
-- Error Handling: Graceful handling of errors during expansion with customizable logging options.
-- Tested and Reliable: Extensive unit tests ensure the reliability of the library.
+- Comprehensive Error Handling: Configure how expansion errors are handled with multiple policies and customizable error responses.
+- Tested and Reliable: Extensive unit and integration tests ensure the reliability of the library.
 
 ## License
 

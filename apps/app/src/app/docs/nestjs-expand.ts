@@ -49,5 +49,12 @@ export const NestJsExpandDoc: NgeDocSettings = {
       renderer: 'assets/docs/nestjs-expand/advanced-usage.md',
       actions: [editInGithubAction('apps/app/src/assets/docs/nestjs-expand/advanced-usage.md')],
     },
+    {
+      title: 'Error Handling',
+      href: 'error-handling',
+      icon: 'https://icongr.am/octicons/alert.svg',
+      renderer: 'assets/docs/nestjs-expand/error-handling.md',
+      actions: [editInGithubAction('apps/app/src/assets/docs/nestjs-expand/error-handling.md')],
+    },
   ],
 }

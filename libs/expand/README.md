@@ -8,7 +8,7 @@ A NestJS module to build Dynamic Resource Expansion for APIs
 [![codecov](https://codecov.io/gh/cisstech/nestkit/branch/main/graph/badge.svg)](https://codecov.io/gh/cisstech/nestkit)
 [![codefactor](https://www.codefactor.io/repository/github/cisstech/nestkit/badge/main)](https://www.codefactor.io/repository/github/cisstech/nestkit/overview/main)
 [![GitHub Tag](https://img.shields.io/github/tag/cisstech/nestkit.svg)](https://github.com/cisstech/nestkit/tags)
-[![npm package](https://img.shields.io/npm/v/@cisstech/nestjs-expand.svg)](https://www.npmjs.org/package/@cisstech/nestkit)
+[![npm package](https://img.shields.io/npm/v/@cisstech/nestjs-expand.svg)](https://www.npmjs.org/package/@cisstech/nestjs-expand)
 [![NPM downloads](http://img.shields.io/npm/dm/@cisstech/nestjs-expand.svg)](https://npmjs.org/package/@cisstech/nestjs-expand)
 [![licence](https://img.shields.io/github/license/cisstech/nestkit)](https://github.com/cisstech/nestkit/blob/main/LICENSE)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
@@ -26,8 +26,8 @@ The NestJS Expandable Library is a powerful and flexible extension for NestJS ap
 - Decorator-Based Configuration: Use decorators to mark classes and methods as expanders and expandable, simplifying configuration.
 - Enhanced Metadata Handling: Improved handling of metadata allows for multiple decorators of the same type on the same target.
 - Configuration and Customization: Configure and customize the library to suit your application's specific needs.
-- Error Handling: Graceful handling of errors during expansion with customizable logging options.
-- Tested and Reliable: Extensive unit tests ensure the reliability of the library.
+- Comprehensive Error Handling: Control how expansion errors are handled with policies (ignore, include, throw) and response customization.
+- Tested and Reliable: Extensive unit and integration tests ensure the reliability of the library.
 
 ## Installation
 
@@ -40,24 +40,19 @@ yarn add @cisstech/nestjs-expand
 - 1. Decorate Expandable Endpoints
 
   ```typescript
-  // user.controller.ts
-  import { Controller, Get, NotFoundException } from '@nestjs/common'
+  import { Controller, Get } from '@nestjs/common'
+  import { CourseService } from './course.service'
+  import { CourseDTO } from './course.dto'
   import { Expandable } from '@cisstech/nestjs-expand'
-  import { UserDTO } from './user.dto'
-  import { UserService } from './user.service'
 
-  @Controller('users')
-  export class UserController {
-    constructor(private readonly userService: UserService) {}
+  @Controller('courses')
+  export class CourseController {
+    constructor(private readonly courseService: CourseService) {}
 
-    @Get(':id')
-    @Expandable(UserDTO)
-    async getById(@Param('id') id: string): Promise<UserDTO> {
-      const user = await this.userService.getById(id)
-      if (!user) {
-        throw new NotFoundException(`User not found: ${id}`)
-      }
-      return new UserDTO(user)
+    @Get()
+    @Expandable(CourseDTO)
+    async getAllCourses(): Promise<CourseDTO[]> {
+      return this.courseService.getAllCourses()
     }
   }
   ```
@@ -65,24 +60,24 @@ yarn add @cisstech/nestjs-expand
 - 2. Implement Expander Services
 
   ```typescript
-  // user.expander.ts
-  import { Injectable, NotFoundException } from '@nestjs/common'
-  import { ExpandContext, Expander, Expandable } from '@cisstech/nestjs-expand'
-  import { UserDTO } from './user.dto'
-  import { CustomerService } from './user.service'
+  import { Injectable } from '@nestjs/common'
+  import { ExpandContext, Expander } from '@cisstech/nestjs-expand'
+  import { CourseDTO } from './course.dto'
+  import { InstructorDTO } from './instructor.dto'
+  import { InstructorService } from './instructor.service'
 
   @Injectable()
-  @Expander(UserDTO)
-  export class UserExpander {
-    constructor(private readonly customerService: CustomerService) {}
+  @Expander(CourseDTO)
+  export class CourseExpander {
+    constructor(private readonly instructorService: InstructorService) {}
 
-    async customer(context: ExpandContext<Request, UserDTO>): Promise<CustomerDTO> {
-      const user = context.parent
-      const customer = await this.customerService.getById(user.customerId)
-      if (!customer) {
-        throw new NotFoundException(`Customer not found: ${user.customerId}`)
+    async instructor(context: ExpandContext<Request, CourseDTO>): Promise<InstructorDTO> {
+      const { parent } = context
+      const instructor = await this.instructorService.getInstructorById(parent.instructorId)
+      if (!instructor) {
+        throw new Error(`Instructor with id ${parent.instructorId} not found`)
       }
-      return new CustomerDTO(customer)
+      return instructor
     }
   }
   ```
@@ -98,8 +93,15 @@ import { UserExpander } from 'PATH_TO_FILE'
 import { UserController } from 'PATH_TO_FILE'
 
 @Module({
-  imports: [NestKitExpandModule.forRoot()],
-  controllers: [UserController],
+  imports: [
+    NestKitExpandModule.forRoot({
+      enableLogging: true,
+      errorHandling: {
+        includeErrorsInResponse: true,
+        defaultErrorPolicy: 'ignore',
+      },
+    }),
+  ],
   providers: [UserExpander],
 })
 export class AppModule {}
@@ -107,34 +109,48 @@ export class AppModule {}
 
 ## Configuration Options
 
-The library provides configuration options to customize its behavior. You can pass an optional configuration object when initializing the ExpandService in your module.
+The library provides configuration options to customize its behavior. You can pass an optional configuration object when initializing the NestKitExpandModule in your module:
 
 ```typescript
-// app.module.ts
+NestKitExpandModule.forRoot({
+  // General configuration
+  enableLogging: true, // Enable or disable logging
+  enableGlobalSelection: true, // Make all endpoints selectable by default
+  expandQueryParamName: 'expands', // The query parameter name for expansions
+  selectQueryParamName: 'selects', // The query parameter name for field selection
+  logLevel: 'warn', // Log level: 'debug', 'log', 'warn', 'error', or 'none'
 
-import { Module } from '@nestjs/common'
-import { NestKitExpandModule } from '@cisstech/nestjs-expand'
-import { UserExpander } from 'PATH_TO_FILE'
-import { UserController } from 'PATH_TO_FILE'
-
-@Module({
-  imports: [
-    NestKitExpandModule.forRoot({
-      enableLogging: true,
-      enableGlobalSelection: true,
+  // Error handling configuration
+  errorHandling: {
+    includeErrorsInResponse: true, // Include error details in the response
+    defaultErrorPolicy: 'ignore', // Default error policy: 'ignore', 'include', or 'throw'
+    errorResponseShape: (error, path) => ({
+      // Customize the error shape
+      message: `Error in ${path}: ${error.message}`,
+      path: path,
+      code: error.code || 'EXPANSION_ERROR',
     }),
-  ],
-  controllers: [UserController],
-  providers: [UserExpander],
+  },
 })
-export class AppModule {}
 ```
 
-## Documentation
+## Error Handling Policies
 
-For detailed documentation, examples, and advanced usage, please refer to the official documentation at <https://cisstech.github.io/nestkit/docs/nestjs-expand/getting-started>
+You can control how expansion errors are handled at both the module and endpoint levels:
 
-A presentation article is also available [medium](https://medium.com/@mciissee/supercharging-nestjs-apis-a-deep-dive-into-dynamic-resource-expansion-0e932cc7b4f2)
+- `ignore` (default): Continue with other expansions, but don't include the failed expansion
+- `include`: Include error details in the response for debugging (requires `includeErrorsInResponse: true`)
+- `throw`: Fail the entire request if any expansion fails
+
+Example with per-endpoint error policy:
+
+```typescript
+@Get('users')
+@Expandable(UserDTO, { errorPolicy: 'include' })
+findAll() {
+  return this.userService.findAll();
+}
+```
 
 ## License
 

@@ -19,6 +19,15 @@ import { UserController } from 'FILE_PATH'
       enableGlobalSelection: true,
       expandQueryParamName: 'expands',
       selectQueryParamName: 'selects',
+      logLevel: 'warn', // 'debug', 'log', 'warn', 'error', or 'none'
+      errorHandling: {
+        includeErrorsInResponse: true,
+        defaultErrorPolicy: 'ignore',
+        errorResponseShape: (error, path) => ({
+          message: error.message,
+          path: path,
+        }),
+      },
     }),
   ],
   controllers: [UserController],
@@ -60,7 +69,7 @@ export class CourseController {
 ```typescript
 // course.controller.ts
 
-import { Controller, Get } from '@nestjs/common'
+import { Controller, Get } from '@nestjs.common'
 import { CourseService } from './course.service'
 import { CourseDTO } from './course.dto'
 import { Expandable } from '@cisstech/nestjs-expand'
@@ -84,7 +93,7 @@ export class CourseController {
 ```typescript
 // course.controller.ts
 
-import { Controller, Get } from '@nestjs/common'
+import { Controller, Get } from '@nestjs.common'
 import { CourseService } from './course.service'
 import { CourseDTO } from './course.dto'
 import { Expandable, Selectable } from '@cisstech/nestjs-expand'
@@ -106,6 +115,97 @@ export class CourseController {
     }
   }
 }
+```
+
+## Error Handling
+
+The library provides comprehensive error handling capabilities for expansions. You can control how errors are handled using policies, customize error messages, and include error details in responses.
+
+### Error Policies
+
+Three error policies are available:
+
+- `ignore` (default): When an expansion fails, it's silently ignored and the request continues
+- `include`: Expansion errors are attached to the response for debugging
+- `throw`: If any expansion fails, the entire request fails with an error
+
+You can set a default policy at the module level and override it per endpoint:
+
+```typescript
+// Module level setting
+NestKitExpandModule.forRoot({
+  errorHandling: {
+    defaultErrorPolicy: 'include',
+    includeErrorsInResponse: true
+  }
+})
+
+// Endpoint level override
+@Get()
+@Expandable(UserDTO, { errorPolicy: 'throw' })
+findAll() {
+  return this.userService.findAll();
+}
+```
+
+### Including Error Details in Responses
+
+When `includeErrorsInResponse` is set to `true`, error details are included in the response:
+
+```typescript
+// For single objects
+{
+  "id": 1,
+  "name": "John",
+  "_expansionErrors": {
+    "UserDTO.profile": {
+      "message": "Profile not found",
+      "path": "UserDTO.profile"
+    }
+  }
+}
+
+// For collections, errors are attached to individual items
+[
+  {
+    "id": 1,
+    "name": "John",
+    "_expansionErrors": {
+      "UserDTO.failingExpander": {
+        "message": "This expander always fails",
+        "path": "UserDTO.failingExpander[0]"
+      }
+    }
+  },
+  {
+    "id": 2,
+    "name": "Jane",
+    "_expansionErrors": {
+      "UserDTO.profile": {
+        "message": "Profile not found",
+        "path": "UserDTO.profile[1]"
+      }
+    }
+  }
+]
+```
+
+### Customizing Error Format
+
+You can customize the format of error details using the `errorResponseShape` function:
+
+```typescript
+NestKitExpandModule.forRoot({
+  errorHandling: {
+    includeErrorsInResponse: true,
+    errorResponseShape: (error, path) => ({
+      message: `Custom format: ${error.message}`,
+      path: path,
+      code: error instanceof HttpException ? error.getStatus() : 'UNKNOWN',
+      timestamp: new Date().toISOString(),
+    }),
+  },
+})
 ```
 
 ## Query Language
