@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { ExpansionError } from './expand'
+
 /**
  * A recursive object representing the properties to expand.
  * Each property is either a boolean or another ExpandTree.
@@ -163,4 +165,56 @@ export const maskObjectWithThree = (target: any, selection: ExpansionThree): any
     return maskedTarget
   }
   return maskObjectWithThreeRecursive(target, selection)
+}
+
+/**
+ * Handle expansion errors by attaching them to the response object.
+ * For arrays, errors will be attached to individual items.
+ * For objects, errors will be attached to the object directly.
+ *
+ * @param expansionErrors - Map of errors with their paths
+ * @param result - Result object to attach errors to
+ * @param includeErrors - Whether to include errors in the response
+ */
+export const handleExpansionErrors = (
+  expansionErrors: Map<string, ExpansionError>,
+  result: any,
+  includeErrors = true
+): void => {
+  if (expansionErrors.size === 0 || !includeErrors) return
+
+  if (Array.isArray(result)) {
+    // For array responses, attach errors to individual items
+    // This requires the error path to include enough information to identify the item
+    const errorsByItemIndex = new Map<number, Record<string, ExpansionError>>()
+
+    // Group errors by item index
+    for (const [path, error] of expansionErrors.entries()) {
+      // Extract the index from the path if available
+      // Format expected: path.to.property[index]
+      const indexMatch = path.match(/\[(\d+)\]/)
+      if (indexMatch && indexMatch[1]) {
+        const index = parseInt(indexMatch[1], 10)
+        if (!errorsByItemIndex.has(index)) {
+          errorsByItemIndex.set(index, {})
+        }
+
+        // Replace the indexed part in the path with empty string
+        const cleanPath = path.replace(/\[\d+\]/, '')
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        errorsByItemIndex.get(index)![cleanPath] = error
+      }
+    }
+
+    // Attach errors to individual items
+    errorsByItemIndex.forEach((errors, index) => {
+      if (index < result.length && Object.keys(errors).length > 0) {
+        result[index]._expansionErrors = errors
+      }
+    })
+  } else if (result && typeof result === 'object') {
+    // For object responses, add errors as a property
+    const errors = Object.fromEntries(expansionErrors.entries())
+    result._expansionErrors = errors
+  }
 }

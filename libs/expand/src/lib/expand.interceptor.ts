@@ -16,7 +16,7 @@ export class ExpandInterceptor implements NestInterceptor {
    * @param context - The execution context.
    * @param next - The next call handler.
    * @returns An observable with the expanded response.
-   * @throws Error if there's an issue during the expansion process.
+   * @throws Error if there's an issue during the expansion process and the error policy is set to 'throw'.
    */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     if (context.getType() !== 'http') return next.handle()
@@ -33,11 +33,34 @@ export class ExpandInterceptor implements NestInterceptor {
     const original = res.json
     res.json = async (body: unknown) => {
       if (res.statusCode && res.statusCode >= 400) return original.call(res, body)
+
       try {
         const expanded = await this.expandService.expandAndSelect(req, body, expandable, selectable)
         return original.call(res, expanded)
-      } catch (error) {
-        this.logger.error(error)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        const config = this.expandService.config
+
+        if (config.enableLogging) {
+          // Use configured log level
+          if (config.logLevel === 'error') {
+            this.logger.error(`Error during expansion: ${error.message}`, error.stack)
+          } else if (config.logLevel === 'warn') {
+            this.logger.warn(`Error during expansion: ${error.message}`)
+          } else if (config.logLevel === 'log') {
+            this.logger.log(`Error during expansion: ${error.message}`)
+          } else if (config.logLevel === 'debug') {
+            this.logger.debug(`Error during expansion: ${error.message}`, error.stack)
+          }
+        }
+
+        // If the endpoint-level or default policy is 'throw', we need to bubble up the error
+        const errorPolicy = expandable?.errorPolicy || config.errorHandling?.defaultErrorPolicy || 'ignore'
+
+        if (errorPolicy === 'throw') {
+          throw error
+        }
+
         return original.call(res, body)
       }
     }

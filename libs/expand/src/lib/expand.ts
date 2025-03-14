@@ -64,6 +64,12 @@ export type ExpandableParams = {
    * - This is ignored if applied to a class decorated with `@Expander` since only root Expandable method are direclty linked to the incoming request.
    */
   queryParamName?: string
+
+  /**
+   * Specify the error policy for this expandable endpoint.
+   * @default The module's defaultErrorPolicy or 'ignore'
+   */
+  errorPolicy?: ExpandErrorPolicy
 }
 
 /**
@@ -117,6 +123,62 @@ export type ExpandConfig = {
    * @default `expands`
    */
   expandQueryParamName?: string
+
+  /**
+   * Configure error handling for expansions.
+   */
+  errorHandling?: ExpansionErrorHandlingConfig
+
+  /**
+   * Log level for expansion logs.
+   * @default 'warn'
+   */
+  logLevel?: 'debug' | 'log' | 'warn' | 'error' | 'none'
+}
+
+/**
+ * Error policy for expansion errors.
+ * - 'ignore': Ignore errors and continue with the expansion (default)
+ * - 'include': Include error details in the response
+ * - 'throw': Throw the error and interrupt the entire request
+ */
+export type ExpandErrorPolicy = 'ignore' | 'include' | 'throw'
+
+/**
+ * Represents error metadata for failed expansions.
+ */
+export type ExpansionError = {
+  message: string
+  path: string
+  stack?: string
+}
+
+/**
+ * Format function for expansion errors.
+ */
+export type ExpansionErrorFormatter = (error: Error, path: string) => Partial<ExpansionError>
+
+/**
+ * Error handling configuration for expansions.
+ */
+export type ExpansionErrorHandlingConfig = {
+  /**
+   * Whether to include error metadata in the response.
+   * @default false
+   */
+  includeErrorsInResponse?: boolean
+
+  /**
+   * Custom formatter for expansion errors.
+   * @default (error, path) => ({ message: error.message, path })
+   */
+  errorResponseShape?: ExpansionErrorFormatter
+
+  /**
+   * Default error policy for all expansions.
+   * @default 'ignore'
+   */
+  defaultErrorPolicy?: ExpandErrorPolicy
 }
 
 /**
@@ -163,4 +225,13 @@ export const DEFAULT_EXPAND_CONFIG: Required<ExpandConfig> = {
   enableGlobalSelection: false,
   selectQueryParamName: 'selects',
   expandQueryParamName: 'expands',
+  logLevel: 'warn',
+  errorHandling: {
+    includeErrorsInResponse: false,
+    defaultErrorPolicy: 'ignore',
+    errorResponseShape: (error, path) => ({
+      message: error.message,
+      path,
+    }),
+  },
 }

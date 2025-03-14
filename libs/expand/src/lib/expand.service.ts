@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/ban-types */
 
@@ -11,9 +12,10 @@ import {
   ExpandConfig,
   ExpandMethod,
   ExpandableParams,
+  ExpansionError,
   SelectableParams,
 } from './expand'
-import { ExpansionThree, createExpansionThree, maskObjectWithThree } from './expand.utils'
+import { ExpansionThree, createExpansionThree, handleExpansionErrors, maskObjectWithThree } from './expand.utils'
 
 @Injectable()
 export class ExpandService implements OnModuleInit {
@@ -34,6 +36,12 @@ export class ExpandService implements OnModuleInit {
     private readonly conf: ExpandConfig
   ) {
     this.conf = { ...DEFAULT_EXPAND_CONFIG, ...conf }
+
+    // Ensure we have errorHandling object with defaults
+    this.conf.errorHandling = {
+      ...DEFAULT_EXPAND_CONFIG.errorHandling,
+      ...conf?.errorHandling,
+    }
   }
 
   /**
@@ -93,7 +101,7 @@ export class ExpandService implements OnModuleInit {
   ): Promise<T> {
     const { query } = request
     if (!query) return resource
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
     const expands =
       query[
         expandable?.queryParamName ?? (this.conf.expandQueryParamName || DEFAULT_EXPAND_CONFIG.expandQueryParamName)
@@ -104,14 +112,27 @@ export class ExpandService implements OnModuleInit {
       ]
     if (!expands && !selects) return resource
 
+    // Create an error map specific to this request (concurrency-safe)
+    const expansionErrors = new Map<string, ExpansionError>()
+
     const response =
       expands && expandable
-        ? await this.expandResource(request, resource, expandable, createExpansionThree(expands))
+        ? await this.expandResource(request, resource, expandable, createExpansionThree(expands), expansionErrors)
         : resource
 
-    return selects && (selectable || this.config.enableGlobalSelection)
-      ? this.selectResource(response, selectable, createExpansionThree(selects))
-      : response
+    const result =
+      selects && (selectable || this.config.enableGlobalSelection)
+        ? this.selectResource(response, selectable, createExpansionThree(selects))
+        : response
+
+    // If we have errors and error inclusion is enabled, add them to the response
+    handleExpansionErrors(
+      expansionErrors,
+      expandable?.rootField ? result[expandable.rootField] : result,
+      this.config.errorHandling?.includeErrorsInResponse
+    )
+
+    return result as T
   }
 
   /**
@@ -125,10 +146,20 @@ export class ExpandService implements OnModuleInit {
     return Reflect.getMetadata(EXPANDABLE_KEY, target)
   }
 
+  private log(level: 'debug' | 'log' | 'warn' | 'error', message: string, ...optionalParams: any[]): void {
+    if (!this.conf.logLevel || this.conf.logLevel === 'none') return
+
+    // Only log if the configured log level is high enough
+    const levels = ['debug', 'log', 'warn', 'error']
+    if (levels.indexOf(this.conf.logLevel) <= levels.indexOf(level)) {
+      this.logger[level](message, ...optionalParams)
+    }
+  }
+
   private async transformResource(
     resource: any,
     parameters: SelectableParams | ExpandableParams | undefined,
-    transformFn: (resource: any) => Promise<any>
+    transformFn: (resource: any, index?: number) => Promise<any>
   ) {
     if (!resource) return resource
 
@@ -137,34 +168,36 @@ export class ExpandService implements OnModuleInit {
       if (!root) return resource
 
       const resources = Array.isArray(root) ? root : [root]
-      const transformations = await Promise.all(resources.map(transformFn))
+      // Pass array index to transformFn for tracking errors with specific items
+      const transformations = await Promise.all(
+        resources.map((res, index) => transformFn(res, Array.isArray(root) ? index : undefined))
+      )
 
       const response = Array.isArray(root) ? transformations : transformations[0]
       return parameters?.rootField ? { ...resource, [parameters.rootField]: response } : response
     } catch (error: any) {
       if (this.conf?.enableLogging) {
-        this.logger.error(`Error during transformation: ${error.message}`, error.stack)
+        this.log('error', `Error during transformation: ${error.message}`, error.stack)
       }
       throw error
     }
   }
 
-  private selectResource(resource: any, selectable: SelectableParams | undefined, three: ExpansionThree) {
-    return this.transformResource(resource, selectable, (parent) => {
-      if (!parent) return parent
-      return maskObjectWithThree(parent, three)
-    })
-  }
-
-  private async expandResource(request: any, resource: any, expandable: ExpandableParams, three: ExpansionThree) {
+  private async expandResource(
+    request: any,
+    resource: any,
+    expandable: ExpandableParams,
+    three: ExpansionThree,
+    expansionErrors: Map<string, ExpansionError>
+  ) {
     const expanders = this.expanders.get(expandable.target)
     if (!expanders) {
       // This should never happen because of the check in onModuleInit so we just log a warning
-      this.logger.warn(`NestJsExpand missing expander for ${expandable.target.name}`)
+      this.log('warn', `NestJsExpand missing expander for ${expandable.target.name}`)
       return resource
     }
 
-    return this.transformResource(resource, expandable, async (parent: any) => {
+    return this.transformResource(resource, expandable, async (parent: any, index?: number) => {
       if (!parent) return parent
 
       const extraValues: Record<string, unknown> = {}
@@ -172,20 +205,56 @@ export class ExpandService implements OnModuleInit {
       for (const propName in three) {
         const expander = expanders?.find((e) => propName in e)
         if (!expander) {
-          this.logger.warn(`NestJsExpand missing method "${propName}" on ${expandable.target.name}`)
+          this.log('warn', `NestJsExpand missing method "${propName}" on ${expandable.target.name}`)
           continue
         }
 
         const method = expander[propName]
-        let value = await method.call(expander, { parent, request })
+        let value: any
+        // Include index in the path if available, for tracking array item errors
+        const expansionPath =
+          typeof index === 'number'
+            ? `${expandable.target.name}.${propName}[${index}]`
+            : `${expandable.target.name}.${propName}`
+
+        // Default error policy from module config or 'ignore'
+        const defaultErrorPolicy = this.conf.errorHandling?.defaultErrorPolicy || 'ignore'
+
+        // Get error policy from expandable params or use default
+        const errorPolicy = expandable.errorPolicy || defaultErrorPolicy
+
+        try {
+          value = await method.call(expander, { parent, request })
+        } catch (error: any) {
+          // Create formatted error using the configured formatter
+          const formatter =
+            this.conf.errorHandling?.errorResponseShape || DEFAULT_EXPAND_CONFIG.errorHandling.errorResponseShape!
+          const formattedError = formatter(error, expansionPath)
+
+          // Store the error for potential inclusion in the response
+          expansionErrors.set(expansionPath, {
+            message: formattedError.message || error.message,
+            path: expansionPath,
+            ...(formattedError.stack && { stack: formattedError.stack }),
+          })
+
+          // Handle error according to the policy
+          if (errorPolicy === 'throw') {
+            throw error
+          }
+
+          this.log('warn', `Error during expansion of ${expansionPath}: ${error.message}`, error.stack)
+          continue // Skip further processing of this field
+        }
 
         const subThree = three[propName]
         if (value && typeof subThree === 'object') {
           const recursiveParams = this.getMethodExpandableMetadata(method) as ExpandableParams
           if (recursiveParams) {
-            value = await this.expandResource(request, value, recursiveParams, subThree)
+            value = await this.expandResource(request, value, recursiveParams, subThree, expansionErrors)
           } else {
-            this.logger.warn(
+            this.log(
+              'warn',
               `NestJsExpand missing @Expandable on ${
                 expandable.target.name
               }.${propName} to recursively expand ${Object.keys(three)}`
@@ -197,6 +266,13 @@ export class ExpandService implements OnModuleInit {
       }
 
       return { ...parent, ...extraValues }
+    })
+  }
+
+  private selectResource(resource: any, selectable: SelectableParams | undefined, three: ExpansionThree) {
+    return this.transformResource(resource, selectable, (parent) => {
+      if (!parent) return parent
+      return maskObjectWithThree(parent, three)
     })
   }
 }
