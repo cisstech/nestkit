@@ -11,7 +11,6 @@ The sample application consists of:
 - **Controllers**: REST API endpoints
 - **Listeners**: PgPubSub listeners to reacts to database changes and sends notifications
 - **Gateway**: WebSocket gateway for real-time communication
-- **Redis Lock Service**: Ensures notifications are processed only once in distributed environments
 - **Module**: Wiring everything together with proper configuration
 
 ## Entity Definitions
@@ -200,14 +199,12 @@ import { UserController } from './controllers/user.controller'
 import { NotificationController } from './controllers/notification.controller'
 import { NotificationChangeListener } from './listeners/notification-change.listener'
 import { WebsocketGateway } from './gateways/websocket.gateway'
-import { RedisLockService } from './redis/redis-lock.service'
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Notification]),
     PgPubSubModule.forRoot({
       databaseUrl: process.env['DATABASE_URL']!,
-      lockService: new RedisLockService(),
     }),
   ],
   controllers: [UserController, NotificationController],

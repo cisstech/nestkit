@@ -1,5 +1,59 @@
 # Advanced Usage
 
+## Module Configuration Options
+
+The library provides configuration options to customize its behavior. You can pass an optional configuration object when initializing the PgPubSubModule in your module.
+
+```typescript
+import { Module } from '@nestjs/common'
+import { TypeOrmModule } from '@nestjs/typeorm'
+import { PgPubSubModule } from '@cisstech/nestjs-pg-pubsub'
+
+@Module({
+  imports: [
+    TypeOrmModule.forRoot({
+      /* your TypeORM config */
+    }),
+    PgPubSubModule.forRoot({
+      databaseUrl: 'postgresql://user:password@localhost:5432/dbname',
+      triggerSchema: 'myschema', // Default: 'public'
+      triggerPrefix: 'my_trigger_prefix', // Default: 'pubsub_trigger'
+      queue: {
+        table: 'custom_queue_table', // Default: 'pg_pubsub_queue'
+        maxRetries: 5, // Default: 5
+        messageTTL: 24 * 60 * 60 * 1000, // Default: 24 hours
+        cleanupInterval: 60 * 60 * 1000, // Default: 1 hour
+      },
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+- **triggerPrefix**: Defines the prefix used for all database triggers dynamically created by the library. This is **critical** since during initialization, the library will automatically delete any existing database triggers whose names start with this prefix before creating new ones.
+
+- **triggerSchema**: The PostgreSQL schema where the tables and triggers are located.
+
+- **queue.table**: Name of the queue table to store messages.
+
+- **queue.maxRetries**: Maximum number of retry attempts for failed messages.
+
+- **queue.messageTTL**: How long to keep messages before they're cleaned up (in milliseconds).
+
+- **queue.cleanupInterval**: How often to run the cleanup job (in milliseconds).
+
+## Message Processing Architecture
+
+The library uses a hybrid approach to message processing for optimal performance and reliability:
+
+1. **Immediate Processing**: When a database change occurs, the trigger sends a notification with just the message ID. The service immediately pulls and processes that message.
+
+2. **Fallback Polling**: In addition, a low-frequency polling mechanism ensures that no messages are missed, even if notifications are lost or the service is temporarily down.
+
+3. **Ordered Processing**: Messages are processed in the order they were created, based on their ID.
+
+4. **Transaction Safety**: The system uses PostgreSQL advisory locks and `SELECT FOR UPDATE SKIP LOCKED` to ensure messages are processed exactly once, even in distributed environments.
+
 ## Controlling the Listener
 
 The library provides methods to control the behavior of the PostgreSQL listener at runtime:
@@ -49,82 +103,6 @@ export class DataService {
 }
 ```
 
-## Custom Lock Service
-
-The library uses a locking mechanism to prevent duplicate processing of events. By default, it uses an in-memory implementation, but you can provide your own implementation for distributed environments:
-
-### Redis Lock Service Example
-
-```typescript
-import { Injectable } from '@nestjs/common'
-import { LockService, LockOptions } from '@cisstech/nestjs-pg-pubsub'
-import { Redis } from 'ioredis'
-
-@Injectable()
-export class RedisLockService implements LockService {
-  private readonly redis: Redis
-
-  constructor() {
-    this.redis = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-    })
-  }
-
-  async tryLock(options: LockOptions): Promise<void> {
-    const { key, duration, onAccept, onReject } = options
-
-    // Using Redis to implement distributed locking
-    const lockKey = `lock:${key}`
-    const now = Date.now()
-    const expiryTime = now + duration
-
-    // Try to acquire the lock using SET NX (only set if not exists)
-    const acquired = await this.redis.set(lockKey, expiryTime, 'PX', duration, 'NX')
-
-    if (acquired) {
-      try {
-        // Lock acquired, execute the callback
-        await onAccept()
-      } finally {
-        // Release lock only if it's still ours
-        const script = `
-          if redis.call('get', KEYS[1]) == ARGV[1] then
-            return redis.call('del', KEYS[1])
-          else
-            return 0
-          end
-        `
-        await this.redis.eval(script, 1, lockKey, expiryTime.toString())
-      }
-    } else if (onReject) {
-      // Lock was not acquired, execute the rejection callback if provided
-      await onReject()
-    }
-  }
-}
-```
-
-> You might consider using [@anchan828/nest-redlock](https://www.npmjs.com/package/@anchan828/nest-redlock) also for distributed locking.
-
-### Register the Custom Lock Service
-
-```typescript
-import { Module } from '@nestjs/common'
-import { PgPubSubModule } from '@cisstech/nestjs-pg-pubsub'
-import { RedisLockService } from './redis-lock.service'
-
-@Module({
-  imports: [
-    PgPubSubModule.forRoot({
-      databaseUrl: process.env.DATABASE_URL,
-      lockService: new RedisLockService(),
-    }),
-  ],
-})
-export class AppModule {}
-```
-
 ## Multiple Listeners for the Same Table
 
 You can register multiple listeners for the same table to handle different aspects of changes:
@@ -149,19 +127,44 @@ export class UserUpdateListener implements PgTableChangeListener<User> {
 
 The library will automatically merge the event registrations into a single PostgreSQL trigger function for optimal performance.
 
+## Selective Error Handling
+
+The library allows you to selectively mark specific messages as failed:
+
+```typescript
+@Injectable()
+@RegisterPgTableChangeListener(User)
+export class UserListener implements PgTableChangeListener<User> {
+  async process(changes: PgTableChanges<User>, onError?: PgTableChangeErrorHandler): Promise<void> {
+    // Process each message individually for fine-grained error handling
+    for (const change of changes.all) {
+      try {
+        // Process the change
+        await this.processChange(change)
+      } catch (error) {
+        // Mark only this specific message as failed
+        onError?.([change.id])
+        // Continue processing other messages
+      }
+    }
+  }
+
+  private async processChange(change: PgTableChangePayload<User>): Promise<void> {
+    // Process a single change
+  }
+}
+```
+
 ## Publishing Custom Events from PostgreSQL
 
-You can publish custom events directly from PostgreSQL using triggers:
+You can publish custom events directly from PostgreSQL by sending a notification:
 
 ```sql
 CREATE OR REPLACE FUNCTION notify_custom_event()
 RETURNS TRIGGER AS $$
 BEGIN
-  PERFORM pg_notify('custom-event', json_build_object(
-    'userId', NEW.id,
-    'action', 'login',
-    'timestamp', extract(epoch from now())
-  )::text);
+  -- Send notification with just the message ID
+  PERFORM pg_notify('custom-event', 'Hello world');
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -181,8 +184,7 @@ export class AuthEventsService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     await this.pgPubSubService.susbcribe('custom-event', (payload) => {
-      // Handle the custom event
-      this.logger.log(`User ${payload.userId} performed ${payload.action}`)
+      console.log(`Received notification for message:`, payload)
     })
   }
 }

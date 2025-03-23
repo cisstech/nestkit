@@ -19,8 +19,6 @@ A NestJS module for real-time PostgreSQL notifications using PubSub
 
 The NestJS PG-PubSub library is a powerful tool that facilitates real-time communication between your NestJS application and PostgreSQL database using the native PostgreSQL Pub/Sub mechanism. It allows your application to listen for changes on specific database tables and respond to those changes in real-time, making it ideal for building reactive applications with immediate data synchronization and event-driven workflows.
 
-**Important Note:** PostgreSQL notifications are transient. If your NestJS application (or a listener) is not actively connected and listening _at the precise moment_ a notification is sent, the notification is missed and lost. Ensure your application instances are running and listening for reliable real-time updates.
-
 ## Features
 
 - **Real-Time Table Change Detection**: Automatically listen for INSERT, UPDATE, and DELETE events on PostgreSQL tables
@@ -28,19 +26,26 @@ The NestJS PG-PubSub library is a powerful tool that facilitates real-time commu
 - **Automatic Trigger Management**: Dynamically creates and manages PostgreSQL triggers
 - **Event Buffering and Batching**: Optimizes performance by buffering and batching events
 - **Entity Mapping**: Maps database column names to entity property names automatically
-- **Configurable Locking Mechanism**: Built-in locking system with configurable implementation, designed for \*\*handling concurrent processing by multiple subscribers in distributed environments.
-- **Custom Event Support**: Subscribe to and handle custom PostgreSQL notification events
-- **Suspend/Resume Capability**: Control when the listeners should be active
-- **Pub/Sub Architecture & Multiple Subscribers**: Leverages PostgreSQL's native Pub/Sub to allow **multiple instances of your application (or different services) to subscribe to the same database events.** This enables scalability and distribution of real-time event processing.
+- **Persistent Message Queue**: Messages are stored in a PostgreSQL table to prevent data loss
+- **Reactive Processing**: Immediately pulls and processes messages when notifications are received
+- **TTL and Retry System**: Implements time-to-live and automatic retries for failed message processing
+- **Message Ordering**: Preserves message processing order using row IDs
+- **Auto Cleanup**: Automatically removes old processed messages to keep the queue size manageable
+- **Multiple Subscribers**: Leverages PostgreSQL's native Pub/Sub to allow multiple application instances to subscribe to the same changes
+- **Error Handling**: Provides comprehensive error handling mechanisms
+- **Fallback Reliability**: Includes low-frequency background polling to ensure no messages are missed
 
-## Technical Details
+## Technical Architecture
 
-- The library creates PostgreSQL triggers and notification functions for the specified tables
-- When table data changes, the triggers fire and send notifications through PostgreSQL's NOTIFY mechanism
-- The library listens for these notifications and processes them according to your defined listeners
-- Events are buffered and batched for efficient processing
-- Entity mapping ensures that database column names are correctly mapped to your entity property names
-- Locking prevents duplicate processing of events in distributed environments
+The library uses a hybrid architecture for optimal performance and reliability:
+
+1. **Trigger-Based Detection**: PostgreSQL triggers capture table changes and store them in a queue table
+2. **Notification System**: Immediate notifications with message IDs are sent via PostgreSQL's NOTIFY
+3. **Message Queue**: Durable storage of change events in a queue table with status tracking
+4. **Hybrid Processing**:
+   - Reactive processing triggered by notifications
+   - Fallback polling for maximum reliability
+5. **Smart Batching**: Messages are processed in efficient batches while preserving order
 
 ## Additional Resources
 
