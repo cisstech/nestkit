@@ -19,6 +19,8 @@ A NestJS module for real-time PostgreSQL notifications using PubSub
 
 The NestJS PG-PubSub library is a powerful tool that facilitates real-time communication between your NestJS application and PostgreSQL database using the native PostgreSQL Pub/Sub mechanism. It allows your application to listen for changes on specific database tables and respond to those changes in real-time, making it ideal for building reactive applications with immediate data synchronization and event-driven workflows.
 
+**Important Note:** PostgreSQL notifications are transient. If your NestJS application (or a listener) is not actively connected and listening _at the precise moment_ a notification is sent, the notification is missed and lost. Ensure your application instances are running and listening for reliable real-time updates.
+
 ## Features
 
 - **Real-Time Table Change Detection**: Automatically listen for INSERT, UPDATE, and DELETE events on PostgreSQL tables
@@ -26,9 +28,10 @@ The NestJS PG-PubSub library is a powerful tool that facilitates real-time commu
 - **Automatic Trigger Management**: Dynamically creates and manages PostgreSQL triggers
 - **Event Buffering and Batching**: Optimizes performance by buffering and batching events
 - **Entity Mapping**: Maps database column names to entity property names automatically
-- **Configurable Locking Mechanism**: Built-in locking system with configurable implementation
+- **Configurable Locking Mechanism**: Built-in locking system with configurable implementation, designed for \*\*handling concurrent processing by multiple subscribers in distributed environments.
 - **Custom Event Support**: Subscribe to and handle custom PostgreSQL notification events
 - **Suspend/Resume Capability**: Control when the listeners should be active
+- **Pub/Sub Architecture & Multiple Subscribers**: Leverages PostgreSQL's native Pub/Sub to allow **multiple instances of your application (or different services) to subscribe to the same database events.** This enables scalability and distribution of real-time event processing.
 
 ## Technical Details
 
