@@ -271,3 +271,7 @@ Sample API Call Result:
   ]
 }
 ```
+
+## Crucial performance note: DataLoader for list endpoints
+
+When expanding fields on list endpoints (like fetching the instructor for every course in GET /courses?expands=instructor), calling the database individually for each item inside the expander method creates the N+1 query problem. To solve this efficiently, use the DataLoader pattern within your expander method or use cache technique. DataLoader batches multiple individual requests (like fetching instructors by ID) into a single, optimized query, dramatically improving performance for list expansions.

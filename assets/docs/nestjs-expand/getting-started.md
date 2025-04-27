@@ -29,6 +29,12 @@ The NestJS Expandable Library is a powerful and flexible extension for NestJS ap
 - Comprehensive Error Handling: Configure how expansion errors are handled with multiple policies and customizable error responses.
 - Tested and Reliable: Extensive unit and integration tests ensure the reliability of the library.
 
+## Use cases
+
+For a detailed explanation of use cases, please refer to this [Medium article](https://medium.com/p/08c06be4c2ba).
+
+## Installation
+
 ## License
 
 MIT © [Mamadou Cisse](https://github.com/cisstech)
