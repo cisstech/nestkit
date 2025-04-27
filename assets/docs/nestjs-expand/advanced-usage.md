@@ -69,7 +69,7 @@ export class CourseController {
 ```typescript
 // course.controller.ts
 
-import { Controller, Get } from '@nestjs.common'
+import { Controller, Get } from '@nestjs.commo/'
 import { CourseService } from './course.service'
 import { CourseDTO } from './course.dto'
 import { Expandable } from '@cisstech/nestjs-expand'
@@ -93,7 +93,7 @@ export class CourseController {
 ```typescript
 // course.controller.ts
 
-import { Controller, Get } from '@nestjs.common'
+import { Controller, Get } from '@nestjs/common'
 import { CourseService } from './course.service'
 import { CourseDTO } from './course.dto'
 import { Expandable, Selectable } from '@cisstech/nestjs-expand'
@@ -116,6 +116,59 @@ export class CourseController {
   }
 }
 ```
+
+## Reusable Expansion Logic
+
+To avoid duplicating expansion logic (e.g., fetching a related entity like a user or instructor) across multiple `@Expander` classes, you can define reusable logic using `@ExpanderMethods` and `@UseExpansionMethod`.
+
+1.  **Create a Class with `@ExpanderMethods`**: This class holds the reusable logic.
+
+    ```typescript
+    // user.expander-methods.ts
+    import { Injectable } from '@nestjs.commo/'
+    import { ExpanderMethods } from '@cisstech/nestjs-expand'
+    import { UserService } from './user.service'
+    import { UserDTO } from './user.dto'
+
+    @Injectable()
+    @ExpanderMethods()
+    export class UserExpanderMethods {
+      constructor(private readonly userService: UserService) {}
+
+      // You can use @Expandable decorator here is UserDTO is also expandable
+      async fetchUserById(userId: number): Promise<UserDTO | null> {
+        // Implement user fetching logic
+        return this.userService.findById(userId)
+      }
+    }
+    ```
+
+2.  **Link Logic using `@UseExpansionMethod`**: Apply this decorator to your standard `@Expander` class.
+
+    ```typescript
+    // post.expander.ts
+    import { Injectable } from '@nestjs.commo/'
+    import { Expander, UseExpansionMethod } from '@cisstech/nestjs-expand'
+    import { PostDTO } from './post.dto'
+    import { UserExpanderMethods } from '../users/user.expander-methods' // Assuming this class exists
+
+    @Injectable()
+    @Expander(PostDTO)
+    @UseExpansionMethod<PostDTO, UserExpanderMethods>({
+      name: 'author', // Field name in PostDTO
+      class: UserExpanderMethods, // Class with reusable logic
+      method: 'fetchUserById', // Method to call
+      // Simple mapping: Use PostDTO.authorId as the argument
+      params: ['authorId'],
+      // Complex mapping example:
+      // params: (context) => [context.parent.authorId, context.request.headers['tenant']]
+    })
+    export class PostExpander {
+      // No need to define the 'author' method here
+    }
+    ```
+
+3.  **Register Providers**: Ensure both `PostExpander` and `UserExpanderMethods` are registered in your module.
 
 ## Error Handling
 

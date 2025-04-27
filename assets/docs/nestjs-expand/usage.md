@@ -47,24 +47,25 @@ export class CourseController {
 }
 ```
 
-## Define Expanders
+## Define Expanders (`@Expander`)
 
-An expander is a simple NestJS service decorated with `@Expander` decorator
+An expander is a simple NestJS service decorated with `@Expander` decorator. It contains methods specific to expanding fields for a particular DTO.
 
 ```typescript
 // course.expander.ts
 
 import { Injectable } from '@nestjs/common'
-import { ExpandContext, Expander, Expandable } from 'nestjs-expandable'
+import { ExpandContext, Expander, Expandable } from '@cisstech/nestjs-expand' // Corrected import path
 import { CourseDTO } from './course.dto'
-import { InstructorDTO } from './instructor.dto'
-import { InstructorService } from './instructor.service'
+import { InstructorDTO } from '../instructors/instructor.dto' // Corrected path
+import { InstructorService } from '../instructors/instructor.service' // Corrected path
 
 @Injectable()
 @Expander(CourseDTO)
 export class CourseExpander {
   constructor(private readonly instructorService: InstructorService) {}
 
+  // This method might be replaced by @UseExpansionMethod if logic is reusable
   async instructor(context: ExpandContext<Request, CourseDTO>): Promise<InstructorDTO> {
     const { parent } = context
     const instructor = await this.instructorService.getInstructorById(parent.instructorId)
@@ -79,6 +80,57 @@ export class CourseExpander {
 :::+ Multiple Expanders
 You can define as many expanders as needed for the same DTO.
 :::
+
+## Define Reusable Expansion Logic (`@ExpanderMethods`)
+
+For common expansion logic (like fetching a user), create a separate injectable class decorated with `@ExpanderMethods`.
+
+```typescript
+// instructor.expander-methods.ts (Example)
+import { Injectable } from '@nestjs/common'
+import { ExpanderMethods } from '@cisstech/nestjs-expand'
+import { InstructorService } from './instructor.service'
+import { InstructorDTO } from './instructor.dto'
+
+@Injectable()
+@ExpanderMethods() // Mark class containing reusable methods
+export class InstructorExpanderMethods {
+  constructor(private readonly instructorService: InstructorService) {}
+
+  // Method to be reused
+  async fetchById(id: number): Promise<InstructorDTO | null> {
+    // Add robust error handling as needed
+    return this.instructorService.getInstructorById(id)
+  }
+}
+```
+
+## Link Reusable Logic (`@UseExpansionMethod`)
+
+In your standard `@Expander` class, use the `@UseExpansionMethod` decorator at the class level to link a field to a method in your `@ExpanderMethods` class.
+
+```typescript
+// course.expander.ts (Updated)
+import { Injectable } from '@nestjs/common'
+import { Expander, UseExpansionMethod } from '@cisstech/nestjs-expand'
+import { CourseDTO } from './course.dto'
+import { InstructorExpanderMethods } from '../instructors/instructor.expander-methods'
+
+@Injectable()
+@Expander(CourseDTO)
+@UseExpansionMethod<CourseDTO, InstructorExpanderMethods>({
+  name: 'instructor', // Field to populate in CourseDTO
+  class: InstructorExpanderMethods, // The class containing the reusable logic
+  method: 'fetchById', // The method to call in InstructorExpanderMethods
+  params: ['instructorId'], // Map CourseDTO.instructorId to the first argument of fetchById
+  // For complex cases: params: (context) => [context.parent.instructorId, context.request.headers['x-tenant']]
+})
+export class CourseExpander {
+  // No need for the 'instructor' method here anymore!
+  // Constructor can be empty if no other dependencies or standard methods are needed.
+  constructor() {}
+}
+```
 
 ## Define Services
 
@@ -127,7 +179,9 @@ export class InstructorService {
 }
 ```
 
-## Import NestKitExpandModule in your AppModule
+## Import NestKitExpandModule and Register Providers
+
+Ensure all `@Expander` and `@ExpanderMethods` classes are registered as providers in your module.
 
 ```typescript
 // app.module.ts
@@ -138,6 +192,7 @@ import { CourseController } from 'PATH_TO_FILE'
 import { CourseService } from 'PATH_TO_FILE'
 import { InstructorService } from 'PATH_TO_FILE'
 import { CourseExpander } from 'PATH_TO_FILE'
+import { InstructorExpanderMethods } from 'PATH_TO_FILE' // Register the reusable methods class
 
 @Module({
   imports: [
@@ -149,7 +204,12 @@ import { CourseExpander } from 'PATH_TO_FILE'
     }),
   ],
   controllers: [CourseController],
-  providers: [CourseService, InstructorService, CourseExpander],
+  providers: [
+    CourseService,
+    InstructorService,
+    CourseExpander, // Register standard expander
+    InstructorExpanderMethods, // Register class with reusable methods
+  ],
 })
 export class AppModule {}
 ```
