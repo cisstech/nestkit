@@ -16,6 +16,10 @@ import { PgPubSubModule } from '@cisstech/nestjs-pg-pubsub'
     }),
     PgPubSubModule.forRoot({
       databaseUrl: 'postgresql://user:password@localhost:5432/dbname',
+      ssl: {
+        rejectUnauthorized: true,
+        ca: fs.readFileSync('/path/to/ca.crt').toString(),
+      },
       triggerSchema: 'myschema', // Default: 'public'
       triggerPrefix: 'my_trigger_prefix', // Default: 'pubsub_trigger'
       queue: {
@@ -29,6 +33,13 @@ import { PgPubSubModule } from '@cisstech/nestjs-pg-pubsub'
 })
 export class AppModule {}
 ```
+
+- **ssl**: Optional SSL configuration for secure database connections. This is passed directly to the underlying `pg-listen` library (which uses `node-postgres`). You can provide any SSL options supported by `node-postgres`, such as:
+
+  - `rejectUnauthorized`: Whether to reject unauthorized connections (set to `true` in production)
+  - `ca`: Certificate authority certificate(s)
+  - `key`: Client private key
+  - `cert`: Client certificate
 
 - **triggerPrefix**: Defines the prefix used for all database triggers dynamically created by the library. This is **critical** since during initialization, the library will automatically delete any existing database triggers whose names start with this prefix before creating new ones.
 

@@ -16,6 +16,10 @@ import { PgPubSubModule } from '@cisstech/nestjs-pg-pubsub'
     }),
     PgPubSubModule.forRoot({
       databaseUrl: 'postgresql://user:password@localhost:5432/dbname',
+      // Optional: SSL configuration for secure connections
+      ssl: {
+        rejectUnauthorized: false,
+      },
       // Optional queue configuration
       queue: {
         maxRetries: 5, // Default: 5
