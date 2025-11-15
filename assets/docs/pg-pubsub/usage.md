@@ -76,6 +76,12 @@ export class UserTableChangeListener implements PgTableChangeListener<User> {
       // Process all changes
       changes.all.forEach((change) => {
         console.log(`Change type: ${change.event} for user with id: ${change.data.id}`)
+
+        // Access metadata for retry information
+        if (change._metadata) {
+          console.log(`Retry count: ${change._metadata.retry_count}`)
+          console.log(`Created at: ${change._metadata.created_at}`)
+        }
       })
 
       // Process inserts

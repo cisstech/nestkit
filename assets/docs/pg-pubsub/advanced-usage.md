@@ -166,6 +166,76 @@ export class UserListener implements PgTableChangeListener<User> {
 }
 ```
 
+## Queue Metadata for Retry Handling
+
+Each change payload includes `_metadata` with retry information. This is useful when syncing to external systems (Kafka, Redis, APIs) where stale retry data could cause issues.
+
+**Metadata fields:**
+
+- `retry_count`: Number of failures (0 = first attempt, 1 = 1st retry, etc.)
+- `created_at`: When the message was originally queued
+
+### Example: Syncing to External Systems with Retry Handling
+
+```typescript
+import { Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import {
+  RegisterPgTableChangeListener,
+  PgTableChangeListener,
+  PgTableChanges,
+  PgTableChangeErrorHandler,
+} from '@cisstech/nestjs-pg-pubsub'
+import { User } from './entities/user.entity'
+
+@Injectable()
+@RegisterPgTableChangeListener(User)
+export class UserKafkaSyncListener implements PgTableChangeListener<User> {
+  constructor(
+    @InjectRepository(User) private userRepository: Repository<User>,
+    private redisCache: RedisService
+  ) {}
+
+  async process(changes: PgTableChanges<User>, onError?: PgTableChangeErrorHandler): Promise<void> {
+    for (const change of changes.all) {
+      try {
+        const retryCount = change._metadata?.retry_count ?? 0
+
+        // For retries, fetch fresh data to avoid syncing stale info
+        let userData = change.data
+        if (retryCount >= 1) {
+          const latestUser = await this.userRepository.findOne({
+            where: { id: change.data.id },
+          })
+          if (!latestUser) {
+            console.log(`User ${change.data.id} no longer exists, skipping`)
+            continue
+          }
+          userData = latestUser
+        }
+        if (retryCount < 1) {
+          await this.callExternalAPI(userData)
+        } else {
+          // Use circuit breaker or fallback for persistent failures
+          await this.sendToDeadLetterQueue(userData)
+        }
+      } catch (error) {
+        onError?.([change.id])
+      }
+    }
+  }
+
+  private async callExternalAPI(user: User): Promise<void> {
+    // Implementation...
+  }
+
+  private async sendToDeadLetterQueue(user: User): Promise<void> {
+    // Implementation...
+  }
+}
+```
+
 ## Publishing Custom Events from PostgreSQL
 
 You can publish custom events directly from PostgreSQL by sending a notification:
