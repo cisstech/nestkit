@@ -1,9 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test } from '@nestjs/testing'
 import { PgTableChangeListener, PgTableInsertPayload } from '../pg-pubsub'
+import { ListenerDiscovery } from './listener-discovery.service'
 import { MessageProcessorService } from './message-processor.service'
 import { QueueService } from './queue.service'
-import { ListenerDiscovery } from './listener-discovery.service'
+
+const createListenerDiscovery = (patch: Partial<ListenerDiscovery> = {}): ListenerDiscovery => ({
+  tablesMap: {},
+  tableNames: [],
+  listeners: [],
+  listenersMap: {},
+  entityMetadataList: [],
+  columnNameToPropNames: {},
+  propNameToColumnNames: {},
+  ...patch,
+})
 
 describe('MessageProcessorService', () => {
   let messageProcessorService: MessageProcessorService
@@ -47,7 +58,7 @@ describe('MessageProcessorService', () => {
         },
       ]
 
-      const mockDiscovery = {
+      const mockDiscovery = createListenerDiscovery({
         tablesMap: {
           users: { create: () => ({}) } as any,
         },
@@ -57,12 +68,13 @@ describe('MessageProcessorService', () => {
         listenersMap: {
           users: [] as unknown as PgTableChangeListener<unknown>[],
         },
-      } satisfies Partial<ListenerDiscovery>
+        tableNames: ['users'],
+      })
 
       // Mock queue service to return messages
       queueService.fetchPendingMessages.mockResolvedValue(mockMessages)
 
-      await messageProcessorService.pullAndProcessMessages('test_channel', mockDiscovery as any)
+      await messageProcessorService.pullAndProcessMessages('test_channel', mockDiscovery)
 
       // Verify messages were processed
       expect(queueService.fetchPendingMessages).toHaveBeenCalledWith('test_channel')
@@ -83,15 +95,12 @@ describe('MessageProcessorService', () => {
       ]
 
       // Mock discovery with empty table maps
-      const mockDiscovery = {
-        tablesMap: {},
-        columnNameToPropNames: {},
-      }
+      const mockDiscovery = createListenerDiscovery()
 
       // Mock queue service to return messages
       queueService.fetchPendingMessages.mockResolvedValue(mockMessages)
 
-      await messageProcessorService.pullAndProcessMessages('test_channel', mockDiscovery as any)
+      await messageProcessorService.pullAndProcessMessages('test_channel', mockDiscovery)
 
       // Verify failed message was marked accordingly
       expect(queueService.markAsFailed).toHaveBeenCalledWith([1])
@@ -100,12 +109,9 @@ describe('MessageProcessorService', () => {
     it('should do nothing if no messages are found', async () => {
       queueService.fetchPendingMessages.mockResolvedValue([])
 
-      const mockDiscovery = {
-        tablesMap: {},
-        columnNameToPropNames: {},
-      }
+      const mockDiscovery = createListenerDiscovery()
 
-      await messageProcessorService.pullAndProcessMessages('test_channel', mockDiscovery as any)
+      await messageProcessorService.pullAndProcessMessages('test_channel', mockDiscovery)
 
       // Verify no processing was attempted
       expect(queueService.markAsProcessed).not.toHaveBeenCalled()

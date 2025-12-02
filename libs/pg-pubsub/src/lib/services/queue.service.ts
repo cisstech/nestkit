@@ -207,7 +207,7 @@ export class QueueService {
         [cutoffDate, this.maxRetries]
       )
 
-      if (result.length > 0) {
+      if (result?.length) {
         this.logger.log(`Cleaned up ${result.length} old messages`)
       }
     } catch (error: any) {

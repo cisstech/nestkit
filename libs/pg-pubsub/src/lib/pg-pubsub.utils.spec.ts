@@ -45,6 +45,21 @@ describe('hashStringToInt', () => {
 })
 
 describe('createEntity', () => {
+  it('should throw an error if table metadata is not found', () => {
+    expect(() => {
+      createEntity('non_existent_table', {}, {}, {})
+    }).toThrow('Table non_existent_table not found in metadata')
+  })
+
+  it('should throw an error if column mapping is not found for the table', () => {
+    const tablesMap: Record<string, EntityMetadata> = {
+      users: { create: () => ({}) } as unknown as EntityMetadata,
+    }
+    expect(() => {
+      createEntity('users', {}, tablesMap, {})
+    }).toThrow('Column mapping for table users not found')
+  })
+
   it('should create an entity with mapped properties', () => {
     // Mock data
     const tableName = 'users'
