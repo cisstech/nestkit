@@ -25,6 +25,14 @@ export const createEntity = (
   columnNameToPropNames: Record<string, Map<string, string>>
 ): Record<string, unknown> => {
   const table = tablesMap[tableName]
+  if (!table) {
+    throw new Error(`Table ${tableName} not found in metadata`)
+  }
+
+  if (!columnNameToPropNames[tableName]) {
+    throw new Error(`Column mapping for table ${tableName} not found`)
+  }
+
   const columns = columnNameToPropNames[tableName]
   const entity = table.create()
 

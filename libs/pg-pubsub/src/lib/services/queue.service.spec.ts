@@ -74,6 +74,7 @@ describe('QueueService', () => {
     it('should fetch pending messages for a channel', async () => {
       const mockMessages = [{ id: 1, channel: 'test_channel', payload: {} }]
       const queryRunner = dataSource.createQueryRunner()
+
       queryRunner.query = jest.fn().mockResolvedValue([mockMessages])
 
       const result = await queueService.fetchPendingMessages('test_channel')
