@@ -36,6 +36,13 @@ The NestJS Expandable Library is a powerful and flexible extension for NestJS ap
 yarn add @cisstech/nestjs-expand
 ```
 
+### NestJS Version Compatibility
+
+This library supports both **NestJS v10** and **NestJS v11**:
+
+- ✅ NestJS v10.x
+- ✅ NestJS v11.x
+
 ## Usage
 
 - 1. Decorate Expandable Endpoints

@@ -44,6 +44,13 @@ The NestJS PG-PubSub library is a powerful tool that facilitates real-time commu
 yarn add @cisstech/nestjs-pg-pubsub
 ```
 
+### NestJS Version Compatibility
+
+This library supports both **NestJS v10** and **NestJS v11**:
+
+- ✅ NestJS v10.x
+- ✅ NestJS v11.x
+
 ## Usage
 
 ### 1. Register the Module
