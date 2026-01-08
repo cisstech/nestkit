@@ -28,7 +28,7 @@ export class QueueService {
 
   constructor(
     private readonly dataSource: DataSource,
-    @Inject(PG_PUBSUB_CONFIG) private readonly config: PgPubSubConfig
+    @Inject(PG_PUBSUB_CONFIG) config: PgPubSubConfig
   ) {
     this.queueSchema = config.queue?.schema ?? PG_PUBSUB_QUEUE_SCHEMA
     this.queueTable = config.queue?.table ?? PG_PUBSUB_QUEUE_TABLE
@@ -37,36 +37,21 @@ export class QueueService {
     this.cleanupInterval = config.queue?.cleanupInterval ?? PG_PUBSUB_QUEUE_CLEANUP_INTERVAL
   }
 
-  /**
-   * Set up the queue table and start cleanup process
-   */
   async setup(): Promise<void> {
     await this.createQueueTable()
     this.startCleanup()
   }
 
-  /**
-   * Stop the cleanup process
-   */
   async teardown(): Promise<void> {
     if (this.cleanupSubscription) {
       this.cleanupSubscription.unsubscribe()
     }
   }
 
-  /**
-   * Fetch pending messages for processing
-   * @param channel The channel to fetch messages for
-   */
   async fetchPendingMessages<T>(channel: string): Promise<QueuedMessage<T>[]> {
-    const queryRunner = this.dataSource.createQueryRunner()
-
     try {
-      // Start a transaction
-      await queryRunner.startTransaction()
-
       // Get pending messages with FOR UPDATE SKIP LOCKED to prevent other processes from getting the same messages
-      const [messages] = await queryRunner.query(
+      const [messages] = await this.dataSource.query(
         `
         UPDATE "${this.queueSchema}"."${this.queueTable}"
         SET status = '${MessageStatus.PROCESSING}',
@@ -87,25 +72,13 @@ export class QueueService {
         [this.maxRetries, channel]
       )
 
-      // Commit the transaction
-      await queryRunner.commitTransaction()
-
-      return messages
+      return messages || []
     } catch (error) {
-      // Rollback the transaction on error
-      await queryRunner.rollbackTransaction()
       this.logger.error(`Failed to fetch pending messages:`, error)
       throw error
-    } finally {
-      // Release the query runner
-      await queryRunner.release()
     }
   }
 
-  /**
-   * Mark messages as processed
-   * @param messageIds The IDs of the messages to mark as processed
-   */
   async markAsProcessed(messageIds: number[]): Promise<void> {
     try {
       await this.dataSource.query(
@@ -123,10 +96,6 @@ export class QueueService {
     }
   }
 
-  /**
-   * Mark a message as failed
-   * @param messageIds The IDs of the messages to mark as failed
-   */
   async markAsFailed(messageIds: number[]): Promise<void> {
     try {
       await this.dataSource.query(
@@ -148,9 +117,6 @@ export class QueueService {
     }
   }
 
-  /**
-   * Create the queue table if it doesn't exist
-   */
   private async createQueueTable(): Promise<void> {
     try {
       await this.dataSource.query(`
@@ -179,9 +145,6 @@ export class QueueService {
     }
   }
 
-  /**
-   * Start the cleanup process to remove old processed messages
-   */
   private startCleanup(): void {
     this.cleanupSubscription = interval(this.cleanupInterval).subscribe(() => {
       this.cleanupOldMessages().catch((err) => {
@@ -190,9 +153,6 @@ export class QueueService {
     })
   }
 
-  /**
-   * Clean up old processed messages
-   */
   private async cleanupOldMessages(): Promise<void> {
     const cutoffDate = new Date(Date.now() - this.messageTTL)
 
