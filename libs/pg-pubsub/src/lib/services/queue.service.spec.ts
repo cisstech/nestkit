@@ -73,27 +73,32 @@ describe('QueueService', () => {
   describe('fetchPendingMessages', () => {
     it('should fetch pending messages for a channel', async () => {
       const mockMessages = [{ id: 1, channel: 'test_channel', payload: {} }]
-      const queryRunner = dataSource.createQueryRunner()
-
-      queryRunner.query = jest.fn().mockResolvedValue([mockMessages])
+      dataSource.query.mockResolvedValue([mockMessages])
 
       const result = await queueService.fetchPendingMessages('test_channel')
 
-      expect(queryRunner.startTransaction).toHaveBeenCalled()
-      expect(queryRunner.query).toHaveBeenCalled()
-      expect(queryRunner.commitTransaction).toHaveBeenCalled()
+      expect(dataSource.query).toHaveBeenCalledWith(
+        expect.stringContaining(`UPDATE "${config.queue.schema}"."${config.queue.table}"`),
+        [config.queue.maxRetries, 'test_channel']
+      )
       expect(result).toEqual(mockMessages)
     })
 
-    it('should rollback transaction on error', async () => {
-      const queryRunner = dataSource.createQueryRunner()
+    it('should return empty array when no messages', async () => {
+      dataSource.query.mockResolvedValue([undefined])
+
+      const result = await queueService.fetchPendingMessages('test_channel')
+
+      expect(result).toEqual([])
+    })
+
+    it('should throw error on database failure', async () => {
       const error = new Error('Database error')
-      queryRunner.query = jest.fn().mockRejectedValue(error)
+      dataSource.query.mockRejectedValue(error)
 
       await expect(queueService.fetchPendingMessages('test_channel')).rejects.toThrow(error)
 
-      expect(queryRunner.rollbackTransaction).toHaveBeenCalled()
-      expect(queryRunner.release).toHaveBeenCalled()
+      expect(dataSource.query).toHaveBeenCalled()
     })
   })
 

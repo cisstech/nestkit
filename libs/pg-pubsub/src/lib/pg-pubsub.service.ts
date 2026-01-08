@@ -151,8 +151,7 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
     await this.messageProcessorService.pullAndProcessMessages(this.config.triggerPrefix!, this.discovery)
 
     // Subscribe to notifications and pull messages immediately when notified
-    await this.susbcribe<number>(this.config.triggerPrefix!, async (messageId) => {
-      this.logger.log(`Received notification for message ID: ${messageId}`)
+    await this.susbcribe<number>(this.config.triggerPrefix!, async () => {
       await this.messageProcessorService.pullAndProcessMessages(this.config.triggerPrefix!, this.discovery)
     })
 
