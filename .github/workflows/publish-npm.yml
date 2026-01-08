@@ -4,35 +4,36 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Select version type'
+        description: "Select version type"
         required: true
-        default: 'patch'
+        default: "patch"
         type: choice
         options:
           - patch
           - minor
           - major
+          - current
 
 env:
   NODE_VERSION: 22
 
 jobs:
   prepare:
-      name: Prepare
-      runs-on: ubuntu-latest
-      steps:
-        - uses: DerYeger/yarn-setup-action@master
-          with:
-            node-version: ${{ env.NODE_VERSION }}
+    name: Prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: DerYeger/yarn-setup-action@master
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
   publish:
     runs-on: ubuntu-latest
     needs: prepare
     permissions:
-      contents: write  # Write access to repository content
-      packages: write  # Write access to publish packages
-      id-token: write  # Permission to create releases
-      pull-requests: write  # Permission to create pull requests
+      contents: write # Write access to repository content
+      packages: write # Write access to publish packages
+      id-token: write # Permission to create releases
+      pull-requests: write # Permission to create pull requests
     steps:
       - uses: DerYeger/yarn-setup-action@master
         with:
@@ -44,11 +45,13 @@ jobs:
           git config --global user.email ${{ github.actor }}@users.noreply.github.com
 
       - name: Bump version
+        if: github.event.inputs.version != 'current'
         id: bump_version
         run: |
-         echo "version=$(npm version ${{ github.event.inputs.version }} --no-git-tag-version)" >> $GITHUB_OUTPUT
+          echo "version=$(npm version ${{ github.event.inputs.version }} --no-git-tag-version)" >> $GITHUB_OUTPUT
 
       - name: Checkout branch and run standard-version
+        if: github.event.inputs.version != 'current'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -63,7 +66,7 @@ jobs:
           gh pr create --title "Release: ${{ steps.bump_version.outputs.version }}" --body "This pull request contains the updated package.json with the new release version" --base main --head release/${{ steps.bump_version.outputs.version }}
 
       - name: Publish Release
-        if: success()
+        if: success() && github.event.inputs.version != 'current'
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
