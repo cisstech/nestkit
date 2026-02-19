@@ -237,4 +237,51 @@ describe('MessageProcessorService', () => {
       )
     })
   })
+
+  describe('backpressure (semaphore + coalescing)', () => {
+    it('should coalesce concurrent pull requests into a single re-fetch', async () => {
+      let fetchCount = 0
+      let resolveFirstFetch: (() => void) | undefined
+
+      // First fetch blocks until we release it; second fetch returns empty
+      queueService.fetchPendingMessages.mockImplementation(() => {
+        fetchCount++
+        if (fetchCount === 1) {
+          return new Promise<any[]>((resolve) => {
+            resolveFirstFetch = () => resolve([])
+          })
+        }
+        return Promise.resolve([])
+      })
+
+      const mockDiscovery = createListenerDiscovery()
+
+      // Fire 3 concurrent pulls
+      const p1 = messageProcessorService.pullAndProcessMessages('ch', mockDiscovery)
+      const p2 = messageProcessorService.pullAndProcessMessages('ch', mockDiscovery)
+      const p3 = messageProcessorService.pullAndProcessMessages('ch', mockDiscovery)
+
+      // p2 and p3 should return immediately (coalesced)
+      await p2
+      await p3
+
+      // Release the first fetch
+      resolveFirstFetch!()
+      await p1
+
+      // Should have been called exactly 2 times:
+      // 1st = the initial pull, 2nd = the coalesced re-fetch
+      expect(queueService.fetchPendingMessages).toHaveBeenCalledTimes(2)
+    })
+
+    it('should not re-fetch when no pull was requested during processing', async () => {
+      queueService.fetchPendingMessages.mockResolvedValue([])
+      const mockDiscovery = createListenerDiscovery()
+
+      await messageProcessorService.pullAndProcessMessages('ch', mockDiscovery)
+
+      // Only 1 fetch, no coalesced re-fetch needed
+      expect(queueService.fetchPendingMessages).toHaveBeenCalledTimes(1)
+    })
+  })
 })

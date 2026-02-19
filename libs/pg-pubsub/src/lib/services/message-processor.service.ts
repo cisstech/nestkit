@@ -11,19 +11,58 @@ import { createEntity } from '../pg-pubsub.utils'
 import { ListenerDiscovery } from './listener-discovery.service'
 import { QueueService } from './queue.service'
 
-/**
- * Service responsible for processing messages from the queue.
- */
 @Injectable()
 export class MessageProcessorService {
   private readonly logger = new Logger(MessageProcessorService.name)
 
+  /**
+   * Whether a pull cycle is currently in progress.
+   * When true, incoming pull requests are coalesced into a single re-fetch at the end.
+   */
+  private processing = false
+
+  /**
+   * Whether a new pull has been requested while a cycle was in progress.
+   * Ensures no messages are lost, a re-fetch will happen after the current cycle completes.
+   */
+  private pendingPull = false
+
   constructor(private readonly queueService: QueueService) {}
 
   /**
-   * Pull pending messages from the queue and process them
+   * Pull pending messages from the queue and process them.
+   *
+   * Implements backpressure via semaphore + coalescing:
+   * - At most ONE pull cycle is active at any time.
+   * - If a pull is already in progress, the request is coalesced: a flag is set
+   *   so that when the current cycle finishes, a new fetch is triggered automatically.
+   * - This prevents thundering herd when many pg_notify events arrive in a burst
+   *   (e.g., 50 INSERTs → only 1-2 pull cycles instead of 50).
    */
   async pullAndProcessMessages(channel: string, discoveryResult: ListenerDiscovery): Promise<void> {
+    if (this.processing) {
+      this.pendingPull = true
+      return
+    }
+
+    this.processing = true
+
+    try {
+      // Loop to handle coalesced pulls, if new notifications arrived during processing,
+      // we do one more fetch cycle to pick them up.
+      do {
+        this.pendingPull = false
+        await this.doPullAndProcess(channel, discoveryResult)
+      } while (this.pendingPull)
+    } finally {
+      this.processing = false
+    }
+  }
+
+  /**
+   * Internal pull and process implementation (no backpressure logic).
+   */
+  private async doPullAndProcess(channel: string, discoveryResult: ListenerDiscovery): Promise<void> {
     try {
       const messages = await this.queueService.fetchPendingMessages(channel)
 
