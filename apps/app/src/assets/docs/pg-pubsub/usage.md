@@ -20,11 +20,16 @@ import { PgPubSubModule } from '@cisstech/nestjs-pg-pubsub'
       ssl: {
         rejectUnauthorized: false,
       },
+      // Optional: dedicated pool config (independent of TypeORM)
+      pool: {
+        max: 2, // Default: 2
+      },
       // Optional queue configuration
       queue: {
         maxRetries: 5, // Default: 5
         messageTTL: 24 * 60 * 60 * 1000, // Default: 24 hours
         cleanupInterval: 60 * 60 * 1000, // Default: 1 hour
+        batchSize: 100, // Default: 100 — max messages per pull cycle
         table: 'pg_pubsub_queue', // Default: 'pg_pubsub_queue'
       },
     }),

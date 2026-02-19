@@ -27,3 +27,9 @@ Or using npm:
 ```bash
 npm install @cisstech/nestjs-pg-pubsub
 ```
+
+`pg` (node-postgres) is a peer dependency — install it if you don't already have it:
+
+```bash
+yarn add pg
+```
