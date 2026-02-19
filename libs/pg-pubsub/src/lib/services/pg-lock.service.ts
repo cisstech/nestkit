@@ -72,11 +72,11 @@ export class PgLockService {
         // Schedule the lock release, must use the SAME client to unlock
         const timeout = setTimeout(async () => {
           try {
-            await client!.query('SELECT pg_advisory_unlock($1)', [lockId])
+            await client?.query('SELECT pg_advisory_unlock($1)', [lockId])
           } catch (error) {
             this.logger.error(`Failed to release advisory lock for key ${key}`, error)
           } finally {
-            client!.release()
+            client?.release()
             this.activeLocks.delete(key)
           }
         }, duration)

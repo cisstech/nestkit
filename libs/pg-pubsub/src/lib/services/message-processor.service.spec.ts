@@ -266,7 +266,7 @@ describe('MessageProcessorService', () => {
       await p3
 
       // Release the first fetch
-      resolveFirstFetch!()
+      resolveFirstFetch?.()
       await p1
 
       // Should have been called exactly 2 times:
