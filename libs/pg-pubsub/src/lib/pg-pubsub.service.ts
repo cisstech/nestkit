@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import createPostgresSubscriber, { Subscriber } from 'pg-listen'
 import { Subscription, interval } from 'rxjs'
