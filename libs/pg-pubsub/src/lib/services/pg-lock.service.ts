@@ -1,37 +1,11 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common'
 import { PoolClient } from 'pg'
+import { LockOptions } from '../pg-pubsub'
 import { hashStringToInt } from '../pg-pubsub.utils'
 import { PgConnectionPoolService } from './pg-connection-pool.service'
-
-export interface LockOptions {
-  /**
-   * The key to lock on
-   */
-  key: string
-
-  /**
-   * The duration of the lock in milliseconds.
-   * The lock will be hold until this duration expires even if the onAccept callback completes earlier.
-   */
-  duration: number
-
-  /**
-   * Callback to execute when the lock is acquired
-   */
-  onAccept: () => Promise<void> | void
-
-  /**
-   * Optional callback to execute when the lock is rejected
-   */
-  onReject?: (error?: unknown) => Promise<void> | void
-}
-
 /**
- * A PostgreSQL implementation of the lock service using advisory locks.
- * This implementation works across multiple processes as long as they connect to the same PostgreSQL database.
- *
- * Uses a dedicated client per lock to ensure session-scoped advisory locks work correctly,
- * independently of TypeORM's connection pool.
+ * PostgreSQL advisory lock service.
+ * Works across multiple processes sharing the same database.
  */
 @Injectable()
 export class PgLockService implements OnModuleDestroy {

@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test } from '@nestjs/testing'
-import { PgTableChangeListener, PgTableInsertPayload } from '../pg-pubsub'
-import { ListenerDiscovery } from './listener-discovery.service'
+import { ListenerDiscovery, PgTableChangeListener, PgTableInsertPayload } from '../pg-pubsub'
 import { MessageProcessorService } from './message-processor.service'
 import { QueueService } from './queue.service'
 

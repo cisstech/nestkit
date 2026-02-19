@@ -22,11 +22,16 @@ import { PgPubSubModule } from '@cisstech/nestjs-pg-pubsub'
       },
       triggerSchema: 'myschema', // Default: 'public'
       triggerPrefix: 'my_trigger_prefix', // Default: 'pubsub_trigger'
+      // Optional: dedicated pool config (independent of TypeORM)
+      pool: {
+        max: 2, // Default: 2
+      },
       queue: {
         table: 'custom_queue_table', // Default: 'pg_pubsub_queue'
         maxRetries: 5, // Default: 5
         messageTTL: 24 * 60 * 60 * 1000, // Default: 24 hours
         cleanupInterval: 60 * 60 * 1000, // Default: 1 hour
+        batchSize: 100, // Default: 100 — max messages fetched per pull cycle
       },
     }),
   ],
@@ -53,6 +58,10 @@ export class AppModule {}
 
 - **queue.cleanupInterval**: How often to run the cleanup job (in milliseconds).
 
+- **queue.batchSize**: Maximum number of messages fetched per pull cycle (default: 100).
+
+- **pool.max**: Maximum number of connections in the dedicated pool (default: 2). This pool is independent of TypeORM's connection pool, so pg-pubsub operations are never blocked by TypeORM pool exhaustion.
+
 ## Message Processing Architecture
 
 The library uses a hybrid approach to message processing for optimal performance and reliability:
@@ -64,6 +73,10 @@ The library uses a hybrid approach to message processing for optimal performance
 3. **Ordered Processing**: Messages are processed in the order they were created, based on their ID.
 
 4. **Transaction Safety**: The system uses PostgreSQL advisory locks and `SELECT FOR UPDATE SKIP LOCKED` to ensure messages are processed exactly once, even in distributed environments.
+
+5. **Backpressure**: At most one pull cycle runs at a time. If new notifications arrive during processing, they are coalesced into a single re-fetch once the current cycle completes.
+
+6. **Conditional Trigger DDL**: On startup, trigger functions are fingerprinted with an MD5 hash (stored via `COMMENT ON FUNCTION`). Triggers are only recreated when their configuration actually changes, avoiding unnecessary DDL on every restart.
 
 ## Controlling the Listener
 

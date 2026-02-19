@@ -1,30 +1,14 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import { createHash } from 'crypto'
 import {
+  ListenerDiscovery,
   PG_PUBSUB_CONFIG,
   PG_PUBSUB_QUEUE_SCHEMA,
   PG_PUBSUB_QUEUE_TABLE,
   PgPubSubConfig,
-  PgTableChangeType,
+  TriggerMetadata,
 } from '../pg-pubsub'
-import { ListenerDiscovery } from './listener-discovery.service'
 import { PgConnectionPoolService } from './pg-connection-pool.service'
-
-export interface TriggerMetadata {
-  name: string
-  table: string
-  schema: string
-  events?: PgTableChangeType[]
-  payloadFields?: string[]
-  hash?: string
-}
-
-export interface TableListener {
-  events?: PgTableChangeType[]
-  table: string
-  schema: string
-  payloadFields?: string[]
-}
 
 @Injectable()
 export class PgTriggerService {

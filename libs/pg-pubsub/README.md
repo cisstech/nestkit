@@ -37,11 +37,20 @@ The NestJS PG-PubSub library is a powerful tool that facilitates real-time commu
 - **Auto Cleanup**: Automatically removes old processed messages to keep the queue size manageable
 - **Multiple Subscribers**: Leverages PostgreSQL's native Pub/Sub to allow multiple instances of your application to subscribe to the same database events
 - **Fallback Reliability**: Includes low-frequency background polling to ensure no messages are missed
+- **Dedicated Connection Pool**: Uses its own `pg.Pool`, independent of TypeORM, to avoid pool contention
+- **Backpressure**: Concurrent notifications are coalesced so at most one pull cycle runs at a time
+- **Smart Trigger Management**: Triggers are only recreated when their configuration actually changes
 
 ## Installation
 
 ```bash
 yarn add @cisstech/nestjs-pg-pubsub
+```
+
+`pg` (node-postgres) is a peer dependency - install it if you don't already have it:
+
+```bash
+yarn add pg
 ```
 
 ### NestJS Version Compatibility
@@ -73,11 +82,16 @@ import { UserTableChangeListener } from './user-change.listener'
       ssl: {
         rejectUnauthorized: false,
       },
+      // Optional: dedicated pool config (independent of TypeORM)
+      pool: {
+        max: 2, // default
+      },
       // Optional queue configuration
       queue: {
         maxRetries: 5,
         messageTTL: 24 * 60 * 60 * 1000, // 24 hours
         cleanupInterval: 60 * 60 * 1000, // 1 hour
+        batchSize: 100, // max messages fetched per pull cycle
         table: 'pg_pubsub_queue',
       },
     }),
@@ -217,6 +231,20 @@ This library implements a hybrid queue-based approach to ensure reliable and eff
    - Ordering: Messages are processed in the order they were created
 
 This approach combines the best of both worlds: reactive performance and reliable delivery.
+
+### Connection Pool
+
+All SQL operations (queue reads/writes, advisory locks, trigger DDL) go through a dedicated `pg.Pool` that is completely independent of TypeORM's connection pool. This means pg-pubsub keeps working even if your TypeORM pool is fully occupied by application queries.
+
+The pool defaults to 2 connections, which is enough for normal operation. Adjust via `pool.max` if needed.
+
+### Backpressure
+
+When PostgreSQL sends notifications faster than the application can process them, concurrent pull requests are coalesced: only one fetch cycle runs at a time, and any notifications received during processing trigger a single re-fetch once the current cycle completes. This prevents unbounded concurrent processing without dropping messages.
+
+### Trigger Change Detection
+
+On startup, the library computes an MD5 hash of each trigger's configuration (events, fields, table, schema) and compares it to the hash stored in the trigger function's `COMMENT ON FUNCTION`. Triggers are only recreated when their configuration actually changes, avoiding unnecessary DDL on every restart.
 
 ## Documentation
 

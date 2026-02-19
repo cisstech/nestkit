@@ -1,49 +1,45 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DiscoveredClassWithMeta } from '@golevelup/nestjs-discovery'
 import { SetMetadata } from '@nestjs/common'
-import { EntityTarget } from 'typeorm'
+import { EntityMetadata, EntityTarget } from 'typeorm'
 
 /**
- * Name of the PostgreSQL pubsub trigger channel and prefix for the triggers created.
+ * Trigger channel name and prefix for created triggers.
  */
 export const PG_PUBSUB_TRIGGER_NAME = 'pubsub_trigger'
 
 /**
- * Schema on which the tables are located and triggers are created.
+ * Default schema for tables and triggers.
  */
 export const PG_PUBSUB_TRIGGER_SCHEMA = 'public'
 
 /**
- * Name of the PostgreSQL pubsub queue schema.
+ * Default queue schema.
  */
 export const PG_PUBSUB_QUEUE_SCHEMA = 'public'
 
 /**
- * Name of the PostgreSQL pubsub queue table.
+ * Default queue table name.
  */
 export const PG_PUBSUB_QUEUE_TABLE = 'pg_pubsub_queue'
 
 /**
- * Default ttl for messages in the queue (in milliseconds).
- * @default 24 hours
+ * Default message TTL in milliseconds.
  */
-export const PG_PUBSUB_QUEUE_MESSAGE_TTL = 24 * 60 * 60 * 1000 // 24 hours
+export const PG_PUBSUB_QUEUE_MESSAGE_TTL = 24 * 60 * 60 * 1000
 
 /**
- * Maximum number of retries for a failed message.
- * @default 5
+ * Default max retries for a failed message.
  */
 export const PG_PUBSUB_QUEUE_MAX_RETRIES = 5
 
 /**
- * Default interval to clean up old processed messages (in milliseconds).
- * @default 1 hour
+ * Default cleanup interval in milliseconds.
  */
-export const PG_PUBSUB_QUEUE_CLEANUP_INTERVAL = 60 * 60 * 1000 // 1 hour
+export const PG_PUBSUB_QUEUE_CLEANUP_INTERVAL = 60 * 60 * 1000
 
 /**
  * Default batch size for fetching pending messages.
- * @default 100
  */
 export const PG_PUBSUB_QUEUE_BATCH_SIZE = 100
 
@@ -221,8 +217,7 @@ export type RegisterPgTableChangeListenerMetadata<T = any> = {
 }
 
 /**
- * Decorator used to register a PostgreSQL table change listener.
- * @param target The target EntityTarget for the listener.
+ * Decorator to register a PostgreSQL table change listener.
  */
 export const RegisterPgTableChangeListener = <T = any>(
   target: EntityTarget<T>,
@@ -362,6 +357,74 @@ export interface PoolConfig {
 }
 
 /**
- * Symbol for the configuration for the PostgreSQL pubsub module.
+ * Options for acquiring an advisory lock.
+ */
+export interface LockOptions {
+  /** Key to lock on. */
+  key: string
+
+  /**
+   * Duration of the lock in milliseconds.
+   * The lock is held until this duration expires, even if the onAccept callback completes earlier.
+   */
+  duration: number
+
+  /** Callback executed when the lock is acquired. */
+  onAccept: () => Promise<void> | void
+
+  /** Optional callback executed when the lock is rejected. */
+  onReject?: (error?: unknown) => Promise<void> | void
+}
+
+/**
+ * Metadata describing a PostgreSQL trigger.
+ */
+export interface TriggerMetadata {
+  name: string
+  table: string
+  schema: string
+  events?: PgTableChangeType[]
+  payloadFields?: string[]
+  hash?: string
+}
+
+/**
+ * Describes a table and the events/fields a listener is interested in.
+ */
+export interface TableListener {
+  events?: PgTableChangeType[]
+  table: string
+  schema: string
+  payloadFields?: string[]
+}
+
+/**
+ * Result of discovering and processing table change listeners.
+ */
+export interface ListenerDiscovery {
+  /** Table metadata mapped by table name. */
+  tablesMap: Record<string, EntityMetadata>
+
+  /** List of table names with listeners. */
+  tableNames: string[]
+
+  /** Table listeners. */
+  listeners: TableListener[]
+
+  /** Map of listeners by table name. */
+  listenersMap: Record<string, PgTableChangeListener<unknown>[]>
+
+  /** List of entity metadata. */
+  entityMetadataList: EntityMetadata[]
+
+  /** Column name to property name mapping for each table. */
+  columnNameToPropNames: Record<string, Map<string, string>>
+
+  /** Property name to column name mapping for each table. */
+  propNameToColumnNames: Record<string, Map<string, string>>
+}
+
+/**
+ * Symbol for the configuration of the PostgreSQL pubsub module.
  */
 export const PG_PUBSUB_CONFIG = Symbol('PG_PUBSUB_CONFIG')

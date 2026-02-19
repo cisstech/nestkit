@@ -3,44 +3,16 @@ import { Inject, Injectable } from '@nestjs/common'
 import { DataSource, EntityMetadata } from 'typeorm'
 import {
   DiscoveredPgTableChangeListener,
+  ListenerDiscovery,
   PG_PUBSUB_CONFIG,
   PG_PUBSUB_TRIGGER_SCHEMA,
   PgPubSubConfig,
   PgTableChangeListener,
   RegisterPgTableChangeListenerMeta,
   RegisterPgTableChangeListenerMetadata,
+  TableListener,
 } from '../pg-pubsub'
-import { TableListener } from './trigger.service'
 
-/**
- * Result of discovering and processing table change listeners.
- */
-export interface ListenerDiscovery {
-  /** Table metadata mapped by table name */
-  tablesMap: Record<string, EntityMetadata>
-
-  /** List of table names with listeners */
-  tableNames: string[]
-
-  /** Table listeners */
-  listeners: TableListener[]
-
-  /** Map of listeners by table name */
-  listenersMap: Record<string, PgTableChangeListener<unknown>[]>
-
-  /** List of entity metadata */
-  entityMetadataList: EntityMetadata[]
-
-  /** Column name to property name mapping for each table */
-  columnNameToPropNames: Record<string, Map<string, string>>
-
-  /** Property name to column name mapping for each table */
-  propNameToColumnNames: Record<string, Map<string, string>>
-}
-
-/**
- * Service responsible for discovering and processing table change listeners.
- */
 @Injectable()
 export class ListenerDiscoveryService {
   constructor(
@@ -50,7 +22,7 @@ export class ListenerDiscoveryService {
   ) {}
 
   /**
-   * Discover and process table change listeners from the application.
+   * Discover table change listeners from the application.
    */
   async discoverListeners(): Promise<ListenerDiscovery> {
     const providers = await this.discoveryService.providersWithMetaAtKey<RegisterPgTableChangeListenerMetadata>(

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import {
+  ListenerDiscovery,
   PgTableChangeListener,
   PgTableChangePayload,
   PgTableChanges,
@@ -8,7 +9,6 @@ import {
   PgTableUpdatePayload,
 } from '../pg-pubsub'
 import { createEntity } from '../pg-pubsub.utils'
-import { ListenerDiscovery } from './listener-discovery.service'
 import { QueueService } from './queue.service'
 
 @Injectable()
