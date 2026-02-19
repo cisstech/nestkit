@@ -42,6 +42,12 @@ export const PG_PUBSUB_QUEUE_MAX_RETRIES = 5
 export const PG_PUBSUB_QUEUE_CLEANUP_INTERVAL = 60 * 60 * 1000 // 1 hour
 
 /**
+ * Default batch size for fetching pending messages.
+ * @default 100
+ */
+export const PG_PUBSUB_QUEUE_BATCH_SIZE = 100
+
+/**
  * Type for a PostgreSQL table INSERT payload.
  */
 export type PgTableInsertPayload<TRow = unknown> = {
@@ -265,6 +271,13 @@ export type PgPubSubConfig = {
   queue?: QueueConfig
 
   /**
+   * Dedicated PG pool configuration.
+   * This pool is independent of TypeORM's connection pool, ensuring that
+   * pg-pubsub operations are never blocked by TypeORM pool exhaustion.
+   */
+  pool?: PoolConfig
+
+  /**
    * Custom lock service to use
    * If not provided, an in-memory lock service will be used
    * @deprecated Will be removed in future versions
@@ -329,6 +342,23 @@ export interface QueueConfig {
    * @default PG_PUBSUB_QUEUE_CLEANUP_INTERVAL
    */
   cleanupInterval?: number
+
+  /**
+   * Maximum number of messages to fetch per pull cycle.
+   * @default 100
+   */
+  batchSize?: number
+}
+
+/**
+ * Configuration for the dedicated PG connection pool.
+ */
+export interface PoolConfig {
+  /**
+   * Maximum number of connections in the dedicated pool.
+   * @default 2
+   */
+  max?: number
 }
 
 /**

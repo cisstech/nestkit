@@ -3,6 +3,7 @@ import { DynamicModule, Global, Module } from '@nestjs/common'
 import { PgLockService } from './services/pg-lock.service'
 import {
   PG_PUBSUB_CONFIG,
+  PG_PUBSUB_QUEUE_BATCH_SIZE,
   PG_PUBSUB_QUEUE_CLEANUP_INTERVAL,
   PG_PUBSUB_QUEUE_MAX_RETRIES,
   PG_PUBSUB_QUEUE_MESSAGE_TTL,
@@ -13,7 +14,13 @@ import {
   PgPubSubConfig,
 } from './pg-pubsub'
 import { PgPubSubService } from './pg-pubsub.service'
-import { ListenerDiscoveryService, MessageProcessorService, PgTriggerService, QueueService } from './services'
+import {
+  ListenerDiscoveryService,
+  MessageProcessorService,
+  PgConnectionPoolService,
+  PgTriggerService,
+  QueueService,
+} from './services'
 
 @Global()
 @Module({
@@ -21,6 +28,7 @@ import { ListenerDiscoveryService, MessageProcessorService, PgTriggerService, Qu
   providers: [
     PgPubSubService,
     PgLockService,
+    PgConnectionPoolService,
     QueueService,
     ListenerDiscoveryService,
     MessageProcessorService,
@@ -45,6 +53,7 @@ export class PgPubSubModule {
               maxRetries: PG_PUBSUB_QUEUE_MAX_RETRIES,
               messageTTL: PG_PUBSUB_QUEUE_MESSAGE_TTL,
               cleanupInterval: PG_PUBSUB_QUEUE_CLEANUP_INTERVAL,
+              batchSize: PG_PUBSUB_QUEUE_BATCH_SIZE,
               ...config.queue,
             },
           } satisfies PgPubSubConfig,

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { TypeOrmModule, getDataSourceToken } from '@nestjs/typeorm'
-import { DataSource } from 'typeorm'
+import { TypeOrmModule } from '@nestjs/typeorm'
+import { PG_PUBSUB_CONFIG } from '../pg-pubsub'
+import { PgConnectionPoolService } from './pg-connection-pool.service'
 import { PgLockService } from './pg-lock.service'
 // eslint-disable-next-line @nx/enforce-module-boundaries
 import { createTestDatabase } from '@cisstech/testing'
@@ -24,9 +25,19 @@ describe('PgLockService', () => {
           logging: false,
         }),
       ],
-      providers: [PgLockService],
+      providers: [
+        PgLockService,
+        PgConnectionPoolService,
+        {
+          provide: PG_PUBSUB_CONFIG,
+          useValue: {
+            databaseUrl: testDbUrl,
+          },
+        },
+      ],
     }).compile()
 
+    await moduleRef.init()
     service = moduleRef.get<PgLockService>(PgLockService)
   })
 
@@ -54,7 +65,7 @@ describe('PgLockService', () => {
   })
 
   it('should reject concurrent lock attempts for the same key', async () => {
-    // Create a second connection to the same database
+    // Create a second module with its own PgConnectionPoolService
     const secondModuleRef = await Test.createTestingModule({
       imports: [
         TypeOrmModule.forRoot({
@@ -66,14 +77,22 @@ describe('PgLockService', () => {
         }),
       ],
       providers: [
+        PgConnectionPoolService,
+        {
+          provide: PG_PUBSUB_CONFIG,
+          useValue: {
+            databaseUrl: testDbUrl,
+          },
+        },
         {
           provide: 'SecondLockService',
-          useFactory: (dataSource: DataSource) => new PgLockService(dataSource),
-          inject: [getDataSourceToken('secondConnection')],
+          useFactory: (pgPool: PgConnectionPoolService) => new PgLockService(pgPool),
+          inject: [PgConnectionPoolService],
         },
       ],
     }).compile()
 
+    await secondModuleRef.init()
     const secondService = secondModuleRef.get<PgLockService>('SecondLockService')
 
     // First lock acquisition
@@ -107,7 +126,7 @@ describe('PgLockService', () => {
   })
 
   it('should respect the lock duration', async () => {
-    // Create a second connection to the same database
+    // Create a second module with its own PgConnectionPoolService
     const secondModuleRef = await Test.createTestingModule({
       imports: [
         TypeOrmModule.forRoot({
@@ -119,14 +138,22 @@ describe('PgLockService', () => {
         }),
       ],
       providers: [
+        PgConnectionPoolService,
+        {
+          provide: PG_PUBSUB_CONFIG,
+          useValue: {
+            databaseUrl: testDbUrl,
+          },
+        },
         {
           provide: 'SecondLockService',
-          useFactory: (dataSource: DataSource) => new PgLockService(dataSource),
-          inject: [getDataSourceToken('secondConnection')],
+          useFactory: (pgPool: PgConnectionPoolService) => new PgLockService(pgPool),
+          inject: [PgConnectionPoolService],
         },
       ],
     }).compile()
 
+    await secondModuleRef.init()
     const secondService = secondModuleRef.get<PgLockService>('SecondLockService')
     const lockKey = 'duration-test-key'
     const shortDuration = 300 // ms

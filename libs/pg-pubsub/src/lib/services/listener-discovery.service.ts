@@ -38,9 +38,6 @@ export interface ListenerDiscovery {
   propNameToColumnNames: Record<string, Map<string, string>>
 }
 
-/**
- * Service responsible for discovering and processing table change listeners.
- */
 @Injectable()
 export class ListenerDiscoveryService {
   constructor(

@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import { interval, Subscription } from 'rxjs'
-import { DataSource } from 'typeorm'
 import {
   MessageStatus,
   PG_PUBSUB_CONFIG,
+  PG_PUBSUB_QUEUE_BATCH_SIZE,
   PG_PUBSUB_QUEUE_CLEANUP_INTERVAL,
   PG_PUBSUB_QUEUE_MAX_RETRIES,
   PG_PUBSUB_QUEUE_MESSAGE_TTL,
@@ -13,6 +13,7 @@ import {
   PgPubSubConfig,
   QueuedMessage,
 } from '../pg-pubsub'
+import { PgConnectionPoolService } from './pg-connection-pool.service'
 
 @Injectable()
 export class QueueService {
@@ -23,11 +24,10 @@ export class QueueService {
   private readonly maxRetries: number
   private readonly messageTTL: number
   private readonly cleanupInterval: number
-
-  private readonly BATCH_SIZE_LIMIT = 100
+  private readonly batchSize: number
 
   constructor(
-    private readonly dataSource: DataSource,
+    private readonly pgPool: PgConnectionPoolService,
     @Inject(PG_PUBSUB_CONFIG) config: PgPubSubConfig
   ) {
     this.queueSchema = config.queue?.schema ?? PG_PUBSUB_QUEUE_SCHEMA
@@ -35,6 +35,7 @@ export class QueueService {
     this.maxRetries = config.queue?.maxRetries ?? PG_PUBSUB_QUEUE_MAX_RETRIES
     this.messageTTL = config.queue?.messageTTL ?? PG_PUBSUB_QUEUE_MESSAGE_TTL
     this.cleanupInterval = config.queue?.cleanupInterval ?? PG_PUBSUB_QUEUE_CLEANUP_INTERVAL
+    this.batchSize = config.queue?.batchSize ?? PG_PUBSUB_QUEUE_BATCH_SIZE
   }
 
   async setup(): Promise<void> {
@@ -51,7 +52,7 @@ export class QueueService {
   async fetchPendingMessages<T>(channel: string): Promise<QueuedMessage<T>[]> {
     try {
       // Get pending messages with FOR UPDATE SKIP LOCKED to prevent other processes from getting the same messages
-      const [messages] = await this.dataSource.query(
+      const messages = await this.pgPool.query<QueuedMessage<T>>(
         `
         UPDATE "${this.queueSchema}"."${this.queueTable}"
         SET status = '${MessageStatus.PROCESSING}',
@@ -64,7 +65,7 @@ export class QueueService {
                  next_retry_at <= NOW()))
             AND channel = $2
           ORDER BY id ASC  -- Ensure order is preserved
-          LIMIT ${this.BATCH_SIZE_LIMIT}
+          LIMIT ${this.batchSize}
           FOR UPDATE SKIP LOCKED
         )
         RETURNING *
@@ -81,7 +82,7 @@ export class QueueService {
 
   async markAsProcessed(messageIds: number[]): Promise<void> {
     try {
-      await this.dataSource.query(
+      await this.pgPool.query(
         `
         UPDATE "${this.queueSchema}"."${this.queueTable}"
         SET status = '${MessageStatus.PROCESSED}',
@@ -98,7 +99,7 @@ export class QueueService {
 
   async markAsFailed(messageIds: number[]): Promise<void> {
     try {
-      await this.dataSource.query(
+      await this.pgPool.query(
         `
         UPDATE "${this.queueSchema}"."${this.queueTable}"
         SET status = '${MessageStatus.FAILED}',
@@ -119,7 +120,7 @@ export class QueueService {
 
   private async createQueueTable(): Promise<void> {
     try {
-      await this.dataSource.query(`
+      await this.pgPool.query(`
         CREATE TABLE IF NOT EXISTS "${this.queueSchema}"."${this.queueTable}" (
           id BIGSERIAL PRIMARY KEY,
           channel VARCHAR(255) NOT NULL,
@@ -157,7 +158,7 @@ export class QueueService {
     const cutoffDate = new Date(Date.now() - this.messageTTL)
 
     try {
-      const result = await this.dataSource.query(
+      const result = await this.pgPool.query(
         `
         DELETE FROM "${this.queueSchema}"."${this.queueTable}"
         WHERE (status = '${MessageStatus.PROCESSED}' AND processed_at < $1)

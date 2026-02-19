@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { DataSource } from 'typeorm'
+import { PoolClient } from 'pg'
 import { hashStringToInt } from '../pg-pubsub.utils'
+import { PgConnectionPoolService } from './pg-connection-pool.service'
 
 export interface LockOptions {
   /**
@@ -28,13 +29,16 @@ export interface LockOptions {
 /**
  * A PostgreSQL implementation of the lock service using advisory locks.
  * This implementation works across multiple processes as long as they connect to the same PostgreSQL database.
+ *
+ * Uses a dedicated client per lock to ensure session-scoped advisory locks work correctly,
+ * independently of TypeORM's connection pool.
  */
 @Injectable()
 export class PgLockService {
   private readonly logger = new Logger(PgLockService.name)
-  private readonly activeLocks = new Map<string, NodeJS.Timeout>()
+  private readonly activeLocks = new Map<string, { timeout: NodeJS.Timeout; client: PoolClient }>()
 
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(private readonly pgPool: PgConnectionPoolService) {}
 
   async tryLock(options: LockOptions): Promise<void> {
     const { key, onAccept, onReject } = options
@@ -43,30 +47,41 @@ export class PgLockService {
     const duration = options.duration && options.duration > 0 ? options.duration : 10_000
     const lockId = hashStringToInt(key)
 
-    try {
-      // Try to acquire an advisory lock
-      const lockResult = await this.dataSource.query('SELECT pg_try_advisory_lock($1) as acquired', [lockId])
+    let client: PoolClient | undefined
 
-      if (lockResult[0].acquired) {
-        // Schedule the lock release first - this ensures the duration is measured from acquisition time
-        const lock = this.activeLocks.get(key)
-        if (lock) {
-          clearTimeout(lock)
+    try {
+      // Acquire a dedicated client. Advisory locks are session-scoped,
+      // so we must hold the same client for the entire lock duration.
+      client = await this.pgPool.acquireClient()
+
+      const lockResult = await client.query('SELECT pg_try_advisory_lock($1) as acquired', [lockId])
+
+      if (lockResult.rows[0].acquired) {
+        // Clear any previous lock for the same key
+        const existingLock = this.activeLocks.get(key)
+        if (existingLock) {
+          clearTimeout(existingLock.timeout)
+          try {
+            await existingLock.client.query('SELECT pg_advisory_unlock($1)', [lockId])
+            existingLock.client.release()
+          } catch {
+            // Ignore errors releasing stale locks
+          }
         }
 
+        // Schedule the lock release, must use the SAME client to unlock
         const timeout = setTimeout(async () => {
           try {
-            await this.dataSource.query('SELECT pg_advisory_unlock($1)', [lockId])
-            this.activeLocks.delete(key)
+            await client!.query('SELECT pg_advisory_unlock($1)', [lockId])
           } catch (error) {
-            // NOTE: TypeORMError: Driver not Connected is thrown when running tests with Jest
-            // This is because the connection is closed before the lock is released at i's a design flaw in the test
-            // We can safely ignore this error in the test environment
             this.logger.error(`Failed to release advisory lock for key ${key}`, error)
+          } finally {
+            client!.release()
+            this.activeLocks.delete(key)
           }
         }, duration)
 
-        this.activeLocks.set(key, timeout)
+        this.activeLocks.set(key, { timeout, client })
 
         // Now proceed with the operation
         await onAccept()
@@ -74,10 +89,21 @@ export class PgLockService {
         return
       }
 
-      // We didn't get the lock, another instance is holding it
+      // We didn't get the lock, release the client immediately
+      client.release()
+      client = undefined
+
       await onReject?.()
     } catch (error) {
-      // If there's an error acquiring or releasing the lock, call onReject
+      // Release the client if we still hold it
+      if (client) {
+        try {
+          client.release()
+        } catch {
+          // Ignore release errors
+        }
+      }
+
       await onReject?.(error)
     }
   }
