@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
-import { DataSource } from 'typeorm'
+import { createHash } from 'crypto'
 import {
   PG_PUBSUB_CONFIG,
   PG_PUBSUB_QUEUE_SCHEMA,
@@ -8,6 +8,7 @@ import {
   PgTableChangeType,
 } from '../pg-pubsub'
 import { ListenerDiscovery } from './listener-discovery.service'
+import { PgConnectionPoolService } from './pg-connection-pool.service'
 
 export interface TriggerMetadata {
   name: string
@@ -15,6 +16,7 @@ export interface TriggerMetadata {
   schema: string
   events?: PgTableChangeType[]
   payloadFields?: string[]
+  hash?: string
 }
 
 export interface TableListener {
@@ -24,89 +26,134 @@ export interface TableListener {
   payloadFields?: string[]
 }
 
-/**
- * Service responsible for managing PostgreSQL triggers.
- */
 @Injectable()
 export class PgTriggerService {
   private readonly logger = new Logger(PgTriggerService.name)
+  private readonly metaSchema: string
+  private readonly metaTable = 'pg_pubsub_trigger_meta'
 
   constructor(
-    private readonly dataSource: DataSource,
+    private readonly pgPool: PgConnectionPoolService,
     @Inject(PG_PUBSUB_CONFIG) private readonly config: PgPubSubConfig
-  ) {}
+  ) {
+    this.metaSchema = config.queue?.schema ?? PG_PUBSUB_QUEUE_SCHEMA
+  }
 
   /**
-   * Setup triggers for the given listener discovery result using differential update.
-   * Only obsolete triggers are dropped, and new/changed triggers are upserted.
-   * This approach minimizes disruption and prevents event loss during reconfiguration.
-   * @param discovery The listener discovery result.
+   * Setup triggers using differential update.
+   * Compares MD5 hashes stored in a metadata table to skip unchanged triggers.
    */
   async setupTriggers(discovery: ListenerDiscovery): Promise<void> {
+    await this.ensureMetaTable()
+
+    const storedHashes = await this.loadStoredHashes()
     const existingTriggers = await this.listTriggers()
 
-    // Map of desired triggers: key = "schema.table", value = trigger metadata
-    const desiredTriggersMap = new Map<string, TriggerMetadata>()
+    const desiredMap = new Map<string, TriggerMetadata>()
     discovery.listeners.forEach((listener) => {
-      const key = `${listener.schema}.${listener.table}`
-      desiredTriggersMap.set(key, {
+      const name = `${this.config.triggerPrefix}_${listener.table.toLowerCase()}`
+      desiredMap.set(name, {
         table: listener.table,
         schema: listener.schema,
-        name: `${this.config.triggerPrefix}_${listener.table.toLowerCase()}`,
+        name,
         events: listener.events,
         payloadFields: listener.payloadFields,
       })
     })
 
-    // Map of existing triggers: key = "schema.table"
-    const existingTriggersMap = new Map<string, TriggerMetadata>()
-    existingTriggers.forEach((trigger) => {
-      const key = `${trigger.schema}.${trigger.table}`
-      existingTriggersMap.set(key, trigger)
-    })
+    const existingSet = new Set(existingTriggers.map((t) => t.name))
 
-    // Calculate diff: B - A (triggers to drop - obsolete ones)
-    const triggersToRemove: TriggerMetadata[] = []
-    existingTriggersMap.forEach((trigger, key) => {
-      if (!desiredTriggersMap.has(key)) {
-        triggersToRemove.push(trigger)
+    // Triggers to drop: exist in DB but not desired
+    const toRemove = existingTriggers.filter((t) => !desiredMap.has(t.name))
+
+    // Triggers to upsert: desired but hash differs or missing
+    const toUpsert: TriggerMetadata[] = []
+    desiredMap.forEach((desired) => {
+      const desiredHash = this.computeTriggerHash(desired, discovery.propNameToColumnNames)
+      const storedHash = storedHashes.get(desired.name)
+      const triggerExists = existingSet.has(desired.name)
+
+      if (!triggerExists || storedHash !== desiredHash) {
+        toUpsert.push(desired)
+      } else {
+        this.logger.debug(`Trigger ${desired.name} unchanged, skipping`)
       }
     })
 
-    // Calculate triggers to upsert (create or replace)
-    const triggersToUpsert: TriggerMetadata[] = Array.from(desiredTriggersMap.values())
-
-    // First, upsert all desired triggers (atomic per trigger using CREATE OR REPLACE)
-    // This ensures triggers are always active, preventing event loss
-    if (triggersToUpsert.length > 0) {
-      await this.createTriggers(triggersToUpsert, discovery.propNameToColumnNames)
+    if (toUpsert.length > 0) {
+      await this.createTriggers(toUpsert, discovery.propNameToColumnNames)
+    } else if (desiredMap.size > 0) {
+      this.logger.log('All triggers are up-to-date, no DDL needed')
     }
 
-    // Then, drop obsolete triggers (safe now since new ones are active)
-    if (triggersToRemove.length > 0) {
-      await this.dropTriggers(triggersToRemove)
+    if (toRemove.length > 0) {
+      await this.dropTriggers(toRemove)
     }
   }
 
+  /**
+   * Compute a deterministic MD5 hash for a trigger configuration.
+   */
+  computeTriggerHash(trigger: TriggerMetadata, propNameToColumnNames: Record<string, Map<string, string>>): string {
+    const events = trigger.events?.length ? [...trigger.events].sort() : ['DELETE', 'INSERT', 'UPDATE']
+    const columns = propNameToColumnNames[trigger.table]
+    const resolvedPayloadFields = trigger.payloadFields?.length
+      ? trigger.payloadFields.map((field) => columns?.get(field) ?? field).sort()
+      : []
+
+    const hashInput = JSON.stringify({
+      events,
+      payloadFields: resolvedPayloadFields,
+      schema: trigger.schema,
+      table: trigger.table,
+      triggerPrefix: this.config.triggerPrefix,
+      queueSchema: this.config.queue?.schema ?? PG_PUBSUB_QUEUE_SCHEMA,
+      queueTable: this.config.queue?.table ?? PG_PUBSUB_QUEUE_TABLE,
+    })
+
+    return createHash('md5').update(hashInput).digest('hex')
+  }
+
+  private async ensureMetaTable(): Promise<void> {
+    await this.pgPool.query(`
+      CREATE TABLE IF NOT EXISTS "${this.metaSchema}"."${this.metaTable}" (
+        trigger_name TEXT PRIMARY KEY,
+        config_hash TEXT NOT NULL
+      )
+    `)
+  }
+
+  private async loadStoredHashes(): Promise<Map<string, string>> {
+    const rows = await this.pgPool.query<{ trigger_name: string; config_hash: string }>(`
+      SELECT trigger_name, config_hash FROM "${this.metaSchema}"."${this.metaTable}"
+    `)
+    const map = new Map<string, string>()
+    rows?.forEach((r) => map.set(r.trigger_name, r.config_hash))
+    return map
+  }
+
   private async listTriggers(): Promise<TriggerMetadata[]> {
-    const triggers = await this.dataSource.query<TriggerMetadata[]>(`
-      SELECT
-        DISTINCT(trigger_name) as name,
-        trigger_schema as schema,
-        event_object_table as table
+    const triggers = await this.pgPool.query<{
+      name: string
+      schema: string
+      table: string
+    }>(`
+      SELECT DISTINCT trigger_name as name, trigger_schema as schema, event_object_table as table
       FROM information_schema.triggers
       WHERE trigger_name LIKE '${this.config.triggerPrefix}_%'
     `)
-    return triggers ?? []
+    return (triggers ?? []).map((t) => ({ name: t.name, schema: t.schema, table: t.table }))
   }
 
   private async dropTriggers(triggers: TriggerMetadata[]): Promise<void> {
     if (!triggers.length) return
 
     this.logger.log(`Dropping triggers:\n${triggers.map((t) => `${t.schema}.${t.table}.${t.name}`).join(',\n')}`)
-    await this.dataSource.query(
-      triggers.map((t) => `DROP FUNCTION IF EXISTS ${t.schema}."${t.name}" CASCADE`).join('; ')
-    )
+    await this.pgPool.query(triggers.map((t) => `DROP FUNCTION IF EXISTS ${t.schema}."${t.name}" CASCADE`).join('; '))
+
+    // Clean up metadata
+    const names = triggers.map((t) => `'${t.name}'`).join(', ')
+    await this.pgPool.query(`DELETE FROM "${this.metaSchema}"."${this.metaTable}" WHERE trigger_name IN (${names})`)
   }
 
   private async createTriggers(
@@ -136,9 +183,9 @@ export class PgTriggerService {
         }
 
         const events = t.events?.length ? t.events : ['INSERT', 'UPDATE', 'DELETE']
+        const hash = this.computeTriggerHash(t, propNameToColumnNames)
 
-        await this.dataSource.query(`
-          -- Create the trigger function
+        await this.pgPool.query(`
           CREATE OR REPLACE FUNCTION ${t.schema}."${t.name}"()
           RETURNS TRIGGER
           AS $BODY$
@@ -175,14 +222,12 @@ export class PgTriggerService {
               );
             END IF;
 
-            -- Insert into queue table and get the inserted ID
             INSERT INTO "${this.config.queue?.schema ?? PG_PUBSUB_QUEUE_SCHEMA}"."${
               this.config.queue?.table ?? PG_PUBSUB_QUEUE_TABLE
             }"(channel, payload)
             VALUES ('${this.config.triggerPrefix}', payload)
             RETURNING id INTO inserted_id;
 
-            -- Send notification with just the message ID
             PERFORM pg_notify('${this.config.triggerPrefix}', inserted_id::text);
 
             RETURN NEW;
@@ -190,14 +235,34 @@ export class PgTriggerService {
           $BODY$
           LANGUAGE plpgsql;
 
-          -- Drop the trigger if it already exists
           DROP TRIGGER IF EXISTS ${t.name} ON ${table};
-
-          -- Create the trigger
-          CREATE TRIGGER ${t.name}
-          AFTER ${events.join(' OR ')} ON ${table}
-          FOR EACH ROW EXECUTE FUNCTION ${t.schema}."${t.name}"();
         `)
+
+        // Attach trigger only if the table exists
+        const tableExists = await this.pgPool.query<{ exists: boolean }>(`
+          SELECT EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema = '${t.schema}' AND table_name = '${t.table}'
+          ) as exists
+        `)
+
+        if (tableExists?.[0]?.exists) {
+          await this.pgPool.query(`
+            CREATE TRIGGER ${t.name}
+            AFTER ${events.join(' OR ')} ON ${table}
+            FOR EACH ROW EXECUTE FUNCTION ${t.schema}."${t.name}"()
+          `)
+
+          // Store hash only after successful trigger creation
+          await this.pgPool.query(
+            `INSERT INTO "${this.metaSchema}"."${this.metaTable}" (trigger_name, config_hash)
+             VALUES ($1, $2)
+             ON CONFLICT (trigger_name) DO UPDATE SET config_hash = $2`,
+            [t.name, hash]
+          )
+        } else {
+          this.logger.warn(`Table ${table} does not exist yet, trigger ${t.name} will be created on next restart`)
+        }
       })
     )
   }

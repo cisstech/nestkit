@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing'
-import { DataSource } from 'typeorm'
+import { PgConnectionPoolService } from './pg-connection-pool.service'
 import { PgLockService } from './pg-lock.service'
 
 jest.mock('../pg-pubsub.utils', () => ({
@@ -8,21 +8,30 @@ jest.mock('../pg-pubsub.utils', () => ({
 
 describe('PgLockService', () => {
   let pgLockService: PgLockService
-  let dataSource: {
+  let pgPool: {
+    acquireClient: jest.Mock
+  }
+  let mockClient: {
     query: jest.Mock
+    release: jest.Mock
   }
 
   beforeEach(async () => {
-    dataSource = {
+    mockClient = {
       query: jest.fn(),
+      release: jest.fn(),
+    }
+
+    pgPool = {
+      acquireClient: jest.fn().mockResolvedValue(mockClient),
     }
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         PgLockService,
         {
-          provide: DataSource,
-          useValue: dataSource,
+          provide: PgConnectionPoolService,
+          useValue: pgPool,
         },
       ],
     }).compile()
@@ -37,7 +46,7 @@ describe('PgLockService', () => {
 
   describe('tryLock', () => {
     it('should execute callback when lock is acquired', async () => {
-      dataSource.query.mockResolvedValueOnce([{ acquired: true }])
+      mockClient.query.mockResolvedValueOnce({ rows: [{ acquired: true }] })
 
       const onAccept = jest.fn()
       const onReject = jest.fn()
@@ -49,14 +58,15 @@ describe('PgLockService', () => {
         onReject,
       })
 
-      expect(dataSource.query).toHaveBeenCalledWith('SELECT pg_try_advisory_lock($1) as acquired', [12345])
+      expect(pgPool.acquireClient).toHaveBeenCalled()
+      expect(mockClient.query).toHaveBeenCalledWith('SELECT pg_try_advisory_lock($1) as acquired', [12345])
       expect(onAccept).toHaveBeenCalled()
       expect(onReject).not.toHaveBeenCalled()
     })
 
     it('should release lock after duration', async () => {
       jest.useFakeTimers()
-      dataSource.query.mockResolvedValueOnce([{ acquired: true }])
+      mockClient.query.mockResolvedValueOnce({ rows: [{ acquired: true }] })
 
       const onAccept = jest.fn()
 
@@ -72,12 +82,16 @@ describe('PgLockService', () => {
       // Fast-forward time
       jest.advanceTimersByTime(1100)
 
-      // Verify lock is released
-      expect(dataSource.query).toHaveBeenCalledWith('SELECT pg_advisory_unlock($1)', [12345])
+      // Allow async timeout callback to complete
+      await Promise.resolve()
+
+      // Verify lock is released on the same client
+      expect(mockClient.query).toHaveBeenCalledWith('SELECT pg_advisory_unlock($1)', [12345])
+      expect(mockClient.release).toHaveBeenCalled()
     })
 
     it('should call onReject when lock cannot be acquired', async () => {
-      dataSource.query.mockResolvedValueOnce([{ acquired: false }])
+      mockClient.query.mockResolvedValueOnce({ rows: [{ acquired: false }] })
 
       const onAccept = jest.fn()
       const onReject = jest.fn()
@@ -91,11 +105,13 @@ describe('PgLockService', () => {
 
       expect(onAccept).not.toHaveBeenCalled()
       expect(onReject).toHaveBeenCalled()
+      // Client should be released immediately when lock is not acquired
+      expect(mockClient.release).toHaveBeenCalled()
     })
 
     it('should call onReject when an error occurs', async () => {
       const error = new Error('Database error')
-      dataSource.query.mockRejectedValueOnce(error)
+      pgPool.acquireClient.mockRejectedValueOnce(error)
 
       const onAccept = jest.fn()
       const onReject = jest.fn()
@@ -113,7 +129,7 @@ describe('PgLockService', () => {
 
     it('should use default duration if not provided', async () => {
       jest.useFakeTimers()
-      dataSource.query.mockResolvedValueOnce([{ acquired: true }])
+      mockClient.query.mockResolvedValueOnce({ rows: [{ acquired: true }] })
 
       const onAccept = jest.fn()
 
@@ -126,8 +142,11 @@ describe('PgLockService', () => {
       // Verify default timeout is used (10 seconds)
       jest.advanceTimersByTime(10100)
 
+      // Allow async timeout callback to complete
+      await Promise.resolve()
+
       // Verify lock is released after default duration
-      expect(dataSource.query).toHaveBeenCalledWith('SELECT pg_advisory_unlock($1)', [12345])
+      expect(mockClient.query).toHaveBeenCalledWith('SELECT pg_advisory_unlock($1)', [12345])
     })
   })
 })
