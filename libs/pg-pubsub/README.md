@@ -244,7 +244,7 @@ When PostgreSQL sends notifications faster than the application can process them
 
 ### Trigger Change Detection
 
-On startup, the library computes an MD5 hash of each trigger's configuration (events, fields, table, schema) and compares it to the hash stored in the trigger function's `COMMENT ON FUNCTION`. Triggers are only recreated when their configuration actually changes, avoiding unnecessary DDL on every restart.
+On startup, the library computes an MD5 hash of each trigger's configuration (events, fields, table, schema) and compares it to the hash stored in the `pg_pubsub_trigger_meta` metadata table. Triggers are only recreated when their configuration actually changes, avoiding unnecessary DDL on every restart.
 
 ## Documentation
 

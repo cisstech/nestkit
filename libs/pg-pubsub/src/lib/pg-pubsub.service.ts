@@ -2,6 +2,7 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import createPostgresSubscriber, { Subscriber } from 'pg-listen'
 import { Subscription, interval } from 'rxjs'
+import { DataSource, EntityManager } from 'typeorm'
 import { ListenerDiscovery, PG_PUBSUB_CONFIG, PgPubSubConfig } from './pg-pubsub'
 import {
   ListenerDiscoveryService,
@@ -25,6 +26,7 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(PG_PUBSUB_CONFIG)
     private readonly config: PgPubSubConfig,
+    private readonly dataSource: DataSource,
     private readonly pgLockService: PgLockService,
     private readonly queueService: QueueService,
     private readonly triggerService: PgTriggerService,
@@ -123,6 +125,28 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
   async susbcribe<T>(channel: string, callback: (payload: T) => void): Promise<void> {
     await this.postgresSubscriber?.listenTo(channel)
     this.postgresSubscriber?.notifications.on(channel, callback)
+  }
+
+  /**
+   * Run a callback with pg-pubsub triggers disabled.
+   *
+   * Uses a session-scoped PostgreSQL variable (`pg_pubsub.disabled`) so that
+   * triggers skip notification during the transaction. This is useful for
+   * bulk operations (e.g., cascade deletes) where downstream notifications
+   * would be meaningless or harmful.
+   *
+   * @example
+   * ```typescript
+   * await pgPubSubService.withTriggersDisabled(async (em) => {
+   *   await em.getRepository(Customer).delete(customerId);
+   * });
+   * ```
+   */
+  async withTriggersDisabled<T>(callback: (entityManager: EntityManager) => Promise<T>): Promise<T> {
+    return this.dataSource.transaction(async (entityManager) => {
+      await entityManager.query("SET LOCAL pg_pubsub.disabled = 'true'")
+      return callback(entityManager)
+    })
   }
 
   private async setupListenersAndTriggers(): Promise<void> {

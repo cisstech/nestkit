@@ -51,7 +51,7 @@ The library uses a hybrid architecture for optimal performance and reliability:
 5. **Smart Batching**: Messages are processed in efficient batches while preserving order
 6. **Dedicated Pool**: All SQL operations run on an independent `pg.Pool`, decoupled from TypeORM
 7. **Backpressure**: Overlapping notifications are coalesced into a single re-fetch after the current cycle
-8. **Conditional DDL**: Trigger functions are fingerprinted with an MD5 hash and only recreated when changed
+8. **Conditional DDL**: Trigger functions are fingerprinted with an MD5 hash (stored in `pg_pubsub_trigger_meta`) and only recreated when changed
 
 ## Additional Resources
 

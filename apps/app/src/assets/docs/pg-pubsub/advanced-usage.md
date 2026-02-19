@@ -76,7 +76,7 @@ The library uses a hybrid approach to message processing for optimal performance
 
 5. **Backpressure**: At most one pull cycle runs at a time. If new notifications arrive during processing, they are coalesced into a single re-fetch once the current cycle completes.
 
-6. **Conditional Trigger DDL**: On startup, trigger functions are fingerprinted with an MD5 hash (stored via `COMMENT ON FUNCTION`). Triggers are only recreated when their configuration actually changes, avoiding unnecessary DDL on every restart.
+6. **Conditional Trigger DDL**: On startup, trigger functions are fingerprinted with an MD5 hash (stored in the `pg_pubsub_trigger_meta` metadata table). Triggers are only recreated when their configuration actually changes, avoiding unnecessary DDL on every restart.
 
 ## Controlling the Listener
 

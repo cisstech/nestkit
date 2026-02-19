@@ -8,6 +8,7 @@ import {
   PgPubSubConfig,
   TriggerMetadata,
 } from '../pg-pubsub'
+import { assertSafeIdentifier } from '../pg-pubsub.utils'
 import { PgConnectionPoolService } from './pg-connection-pool.service'
 
 @Injectable()
@@ -35,6 +36,10 @@ export class PgTriggerService {
 
     const desiredMap = new Map<string, TriggerMetadata>()
     discovery.listeners.forEach((listener) => {
+      // Validate listener identifiers to prevent SQL injection
+      assertSafeIdentifier(listener.schema, `listener schema for table ${listener.table}`)
+      assertSafeIdentifier(listener.table, 'listener table')
+
       const name = `${this.config.triggerPrefix}_${listener.table.toLowerCase()}`
       desiredMap.set(name, {
         table: listener.table,
@@ -182,6 +187,14 @@ export class PgTriggerService {
             payload JSON;
             inserted_id INTEGER;
           BEGIN
+            -- Skip trigger if pg_pubsub.disabled session variable is set
+            IF current_setting('pg_pubsub.disabled', true) = 'true' THEN
+              IF (TG_OP = 'DELETE') THEN
+                RETURN OLD;
+              END IF;
+              RETURN NEW;
+            END IF;
+
             IF (TG_OP = 'DELETE') THEN
               payload := json_build_object(
                 'id', gen_random_uuid(),
