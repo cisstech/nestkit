@@ -34,6 +34,9 @@ The NestJS PG-PubSub library is a powerful tool that facilitates real-time commu
 - **Multiple Subscribers**: Leverages PostgreSQL's native Pub/Sub to allow multiple application instances to subscribe to the same changes
 - **Error Handling**: Provides comprehensive error handling mechanisms
 - **Fallback Reliability**: Includes low-frequency background polling to ensure no messages are missed
+- **Dedicated Connection Pool**: Uses its own `pg.Pool`, independent of TypeORM, to avoid pool contention
+- **Backpressure**: Concurrent notifications are coalesced so at most one pull cycle runs at a time
+- **Smart Trigger Management**: Triggers are only recreated when their configuration actually changes
 
 ## Technical Architecture
 
@@ -46,6 +49,9 @@ The library uses a hybrid architecture for optimal performance and reliability:
    - Reactive processing triggered by notifications
    - Fallback polling for maximum reliability
 5. **Smart Batching**: Messages are processed in efficient batches while preserving order
+6. **Dedicated Pool**: All SQL operations run on an independent `pg.Pool`, decoupled from TypeORM
+7. **Backpressure**: Overlapping notifications are coalesced into a single re-fetch after the current cycle
+8. **Conditional DDL**: Trigger functions are fingerprinted with an MD5 hash (stored in `pg_pubsub_trigger_meta`) and only recreated when changed
 
 ## Additional Resources
 

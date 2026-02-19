@@ -2,18 +2,19 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import createPostgresSubscriber, { Subscriber } from 'pg-listen'
 import { Subscription, interval } from 'rxjs'
-import { PG_PUBSUB_CONFIG, PgPubSubConfig } from './pg-pubsub'
+import { DataSource, EntityManager } from 'typeorm'
+import { ListenerDiscovery, PG_PUBSUB_CONFIG, PgPubSubConfig } from './pg-pubsub'
 import {
-  ListenerDiscovery,
   ListenerDiscoveryService,
   MessageProcessorService,
+  PgConnectionPoolService,
   PgLockService,
   PgTriggerService,
   QueueService,
 } from './services'
 
 /**
- * Service responsible for subscribing to PostgreSQL pub/sub triggers and handling table changes.
+ * Subscribes to PostgreSQL pub/sub triggers and handles table changes.
  */
 @Injectable()
 export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
@@ -26,7 +27,9 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(PG_PUBSUB_CONFIG)
     private readonly config: PgPubSubConfig,
+    private readonly dataSource: DataSource,
     private readonly pgLockService: PgLockService,
+    private readonly pgConnectionPoolService: PgConnectionPoolService,
     private readonly queueService: QueueService,
     private readonly triggerService: PgTriggerService,
     private readonly messageProcessorService: MessageProcessorService,
@@ -57,7 +60,7 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Pause the PostgreSQL listener.
+   * Pause the listener.
    */
   async pause(): Promise<void> {
     this.pollingSubscription?.unsubscribe()
@@ -70,9 +73,8 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Resume the PostgreSQL listener.
-   * This will connect to the database and start listening for changes.
-   * It is automatically called when the module is initialized.
+   * Resume the listener.
+   * Connects to the database and starts listening for changes.
    */
   async resume(): Promise<void> {
     return new Promise((resolve) => {
@@ -108,10 +110,7 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Suspend the PostgreSQL listener and run the provided action.
-   * This is useful when you want to perform an action without being interrupted by the listener.
-   * The listener will be resumed after the action is completed.
-   * @param action The action to run while the listener is suspended.
+   * Pause the listener, run the provided action, then resume.
    */
   async suspendAndRun(action: () => Promise<void>): Promise<void> {
     await this.pause()
@@ -124,8 +123,6 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Subscribe to a PostgreSQL pub/sub channel.
-   * @param channel The channel to subscribe to.
-   * @param callback The callback to call when a notification is received.
    */
   async susbcribe<T>(channel: string, callback: (payload: T) => void): Promise<void> {
     await this.postgresSubscriber?.listenTo(channel)
@@ -133,31 +130,84 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Set up listeners and triggers based on discovered providers
+   * Run a callback with pg-pubsub triggers disabled.
+   *
+   * Uses a session-scoped PostgreSQL variable (`pg_pubsub.disabled`) so that
+   * triggers skip notification during the transaction. This is useful for
+   * bulk operations (e.g., cascade deletes) where downstream notifications
+   * would be meaningless or harmful.
+   *
+   * @example
+   * ```typescript
+   * await pgPubSubService.withTriggersDisabled(async (em) => {
+   *   await em.getRepository(Customer).delete(customerId);
+   * });
+   * ```
    */
+  async withTriggersDisabled<T>(callback: (entityManager: EntityManager) => Promise<T>): Promise<T> {
+    return this.dataSource.transaction(async (entityManager) => {
+      await entityManager.query("SET LOCAL pg_pubsub.disabled = 'true'")
+      return callback(entityManager)
+    })
+  }
+
+  /**
+   * Run raw SQL queries with pg-pubsub triggers disabled.
+   *
+   * Uses the dedicated pg pool (independent of TypeORM). Useful when you
+   * need to run bulk SQL without going through TypeORM entities.
+   *
+   * @example
+   * ```typescript
+   * await pgPubSubService.withTriggersDisabledRaw(async (query) => {
+   *   await query('DELETE FROM orders WHERE customer_id = $1', [customerId]);
+   *   await query('DELETE FROM customers WHERE id = $1', [customerId]);
+   * });
+   * ```
+   */
+  async withTriggersDisabledRaw<T>(
+    callback: (query: <R = unknown>(sql: string, params?: unknown[]) => Promise<R[]>) => Promise<T>
+  ): Promise<T> {
+    const client = await this.pgConnectionPoolService.acquireClient()
+    try {
+      await client.query('BEGIN')
+      await client.query("SET LOCAL pg_pubsub.disabled = 'true'")
+
+      const queryFn = async <R = unknown>(sql: string, params?: unknown[]): Promise<R[]> => {
+        const result = await client.query(sql, params)
+        return result.rows as R[]
+      }
+
+      const result = await callback(queryFn)
+      await client.query('COMMIT')
+      return result
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
   private async setupListenersAndTriggers(): Promise<void> {
     await this.triggerService.setupTriggers(this.discovery)
   }
 
-  /**
-   * Listen for changes on the PostgreSQL triggers.
-   */
   private async listenForChanges(): Promise<void> {
     if (this.pollingSubscription) return
 
     this.logger.log(`Watching trigger for tables:\n${this.discovery.tableNames.join(',\n')}`)
 
-    // Initial pull of any queued messages that might exist
+    // Initial pull of any queued messages
     await this.messageProcessorService.pullAndProcessMessages(this.config.triggerPrefix!, this.discovery)
 
-    // Subscribe to notifications and pull messages immediately when notified
+    // Subscribe to notifications and pull messages when notified
     await this.susbcribe<number>(this.config.triggerPrefix!, async () => {
       await this.messageProcessorService.pullAndProcessMessages(this.config.triggerPrefix!, this.discovery)
     })
 
-    // Fallback polling at a much lower frequency
-    // to catch any messages that might have been missed due to notification failures
-    const fallbackInterval = 60_000 // 60 seconds
+    // Fallback polling to catch messages missed due to notification failures
+    const fallbackInterval = 60_000
     this.pollingSubscription = interval(fallbackInterval).subscribe(() => {
       this.messageProcessorService.pullAndProcessMessages(this.config.triggerPrefix!, this.discovery).catch((error) => {
         this.logger.error('Error during fallback message polling:', error)

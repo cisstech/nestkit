@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import {
+  ListenerDiscovery,
   PgTableChangeListener,
   PgTableChangePayload,
   PgTableChanges,
@@ -8,22 +9,47 @@ import {
   PgTableUpdatePayload,
 } from '../pg-pubsub'
 import { createEntity } from '../pg-pubsub.utils'
-import { ListenerDiscovery } from './listener-discovery.service'
 import { QueueService } from './queue.service'
 
-/**
- * Service responsible for processing messages from the queue.
- */
 @Injectable()
 export class MessageProcessorService {
   private readonly logger = new Logger(MessageProcessorService.name)
 
+  /** Whether a pull cycle is currently in progress. */
+  private processing = false
+
+  /** Whether a new pull has been requested while a cycle was in progress. */
+  private pendingPull = false
+
   constructor(private readonly queueService: QueueService) {}
 
   /**
-   * Pull pending messages from the queue and process them
+   * Pull pending messages from the queue and process them.
+   *
+   * Implements backpressure via semaphore + coalescing:
+   * at most one pull cycle is active at any time. If a pull is already in
+   * progress, the request is coalesced so that when the current cycle
+   * finishes, a new fetch is triggered automatically.
    */
   async pullAndProcessMessages(channel: string, discoveryResult: ListenerDiscovery): Promise<void> {
+    if (this.processing) {
+      this.pendingPull = true
+      return
+    }
+
+    this.processing = true
+
+    try {
+      do {
+        this.pendingPull = false
+        await this.doPullAndProcess(channel, discoveryResult)
+      } while (this.pendingPull)
+    } finally {
+      this.processing = false
+    }
+  }
+
+  private async doPullAndProcess(channel: string, discoveryResult: ListenerDiscovery): Promise<void> {
     try {
       const messages = await this.queueService.fetchPendingMessages(channel)
 
@@ -37,8 +63,6 @@ export class MessageProcessorService {
         try {
           const payload = message.payload as PgTableChangePayload<unknown>
           payload.id = message.id
-
-          // Add queue metadata to help with stale event detection
           payload._metadata = {
             retry_count: message.retry_count,
             created_at: message.created_at,
@@ -111,7 +135,7 @@ export class MessageProcessorService {
   }
 
   /**
-   * Process the changes received from PostgreSQL and route them to appropriate listeners.
+   * Route change payloads to appropriate table listeners.
    */
   private async processChanges<T>(
     payloads: PgTableChangePayload<T>[],

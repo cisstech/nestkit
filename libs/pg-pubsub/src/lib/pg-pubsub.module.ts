@@ -3,6 +3,7 @@ import { DynamicModule, Global, Module } from '@nestjs/common'
 import { PgLockService } from './services/pg-lock.service'
 import {
   PG_PUBSUB_CONFIG,
+  PG_PUBSUB_QUEUE_BATCH_SIZE,
   PG_PUBSUB_QUEUE_CLEANUP_INTERVAL,
   PG_PUBSUB_QUEUE_MAX_RETRIES,
   PG_PUBSUB_QUEUE_MESSAGE_TTL,
@@ -13,7 +14,14 @@ import {
   PgPubSubConfig,
 } from './pg-pubsub'
 import { PgPubSubService } from './pg-pubsub.service'
-import { ListenerDiscoveryService, MessageProcessorService, PgTriggerService, QueueService } from './services'
+import { assertSafeIdentifier } from './pg-pubsub.utils'
+import {
+  ListenerDiscoveryService,
+  MessageProcessorService,
+  PgConnectionPoolService,
+  PgTriggerService,
+  QueueService,
+} from './services'
 
 @Global()
 @Module({
@@ -21,6 +29,7 @@ import { ListenerDiscoveryService, MessageProcessorService, PgTriggerService, Qu
   providers: [
     PgPubSubService,
     PgLockService,
+    PgConnectionPoolService,
     QueueService,
     ListenerDiscoveryService,
     MessageProcessorService,
@@ -30,6 +39,17 @@ import { ListenerDiscoveryService, MessageProcessorService, PgTriggerService, Qu
 })
 export class PgPubSubModule {
   static forRoot(config: PgPubSubConfig): DynamicModule {
+    const triggerSchema = (config.triggerSchema || PG_PUBSUB_TRIGGER_SCHEMA).trim()
+    const triggerPrefix = (config.triggerPrefix || PG_PUBSUB_TRIGGER_NAME).trim()
+    const queueSchema = (config.queue?.schema || PG_PUBSUB_QUEUE_SCHEMA).trim()
+    const queueTable = (config.queue?.table || PG_PUBSUB_QUEUE_TABLE).trim()
+
+    // Validate identifiers to prevent SQL injection (defense-in-depth)
+    assertSafeIdentifier(triggerSchema, 'triggerSchema')
+    assertSafeIdentifier(triggerPrefix, 'triggerPrefix')
+    assertSafeIdentifier(queueSchema, 'queue.schema')
+    assertSafeIdentifier(queueTable, 'queue.table')
+
     return {
       module: PgPubSubModule,
       providers: [
@@ -37,14 +57,15 @@ export class PgPubSubModule {
           provide: PG_PUBSUB_CONFIG,
           useValue: {
             ...config,
-            triggerSchema: (config.triggerSchema || PG_PUBSUB_TRIGGER_SCHEMA).trim(),
-            triggerPrefix: (config.triggerPrefix || PG_PUBSUB_TRIGGER_NAME).trim(),
+            triggerSchema,
+            triggerPrefix,
             queue: {
-              schema: PG_PUBSUB_QUEUE_SCHEMA,
-              table: PG_PUBSUB_QUEUE_TABLE,
+              schema: queueSchema,
+              table: queueTable,
               maxRetries: PG_PUBSUB_QUEUE_MAX_RETRIES,
               messageTTL: PG_PUBSUB_QUEUE_MESSAGE_TTL,
               cleanupInterval: PG_PUBSUB_QUEUE_CLEANUP_INTERVAL,
+              batchSize: PG_PUBSUB_QUEUE_BATCH_SIZE,
               ...config.queue,
             },
           } satisfies PgPubSubConfig,

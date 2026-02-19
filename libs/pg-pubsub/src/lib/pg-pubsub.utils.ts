@@ -1,9 +1,16 @@
 import { EntityMetadata } from 'typeorm'
 
 /**
- * Helper method to convert a string to a number for advisory locks
- * @param str The string to convert to a number
- * @returns The number representation of the string
+ * Validates that a string is a safe SQL identifier (alphanumeric + underscores only).
+ */
+export const assertSafeIdentifier = (value: string, label: string): void => {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) {
+    throw new Error(`Invalid ${label}: "${value}". Only alphanumeric characters and underscores are allowed.`)
+  }
+}
+
+/**
+ * Convert a string to a 32-bit integer for advisory locks.
  */
 export const hashStringToInt = (str: string): number => {
   let hash = 0
@@ -16,7 +23,7 @@ export const hashStringToInt = (str: string): number => {
 }
 
 /**
- * Create and return an entity based on the table name and data received from PostgreSQL.
+ * Create an entity instance from raw PostgreSQL row data.
  */
 export const createEntity = (
   tableName: string,
