@@ -249,8 +249,9 @@ describe('PgTriggerService', () => {
 
       const result = await (triggerService as any).listTriggers()
 
-      expect(pgPool.query).toHaveBeenCalledWith(expect.stringContaining('information_schema.triggers'))
-      expect(pgPool.query).toHaveBeenCalledWith(expect.stringContaining(`${config.triggerPrefix}_%`))
+      expect(pgPool.query).toHaveBeenCalledWith(expect.stringContaining('information_schema.triggers'), [
+        `${config.triggerPrefix}_%`,
+      ])
       expect(result).toEqual([{ name: 'test_prefix_users', schema: 'public', table: 'users' }])
     })
   })
@@ -265,8 +266,7 @@ describe('PgTriggerService', () => {
         expect.stringContaining(`DROP FUNCTION IF EXISTS public."test_prefix_users" CASCADE`)
       )
       // Should also clean up the metadata table
-      expect(pgPool.query).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM'))
-      expect(pgPool.query).toHaveBeenCalledWith(expect.stringContaining('test_prefix_users'))
+      expect(pgPool.query).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM'), [['test_prefix_users']])
     })
 
     it('should do nothing if triggers list is empty', async () => {

@@ -14,6 +14,7 @@ import {
   PgPubSubConfig,
 } from './pg-pubsub'
 import { PgPubSubService } from './pg-pubsub.service'
+import { assertSafeIdentifier } from './pg-pubsub.utils'
 import {
   ListenerDiscoveryService,
   MessageProcessorService,
@@ -38,6 +39,17 @@ import {
 })
 export class PgPubSubModule {
   static forRoot(config: PgPubSubConfig): DynamicModule {
+    const triggerSchema = (config.triggerSchema || PG_PUBSUB_TRIGGER_SCHEMA).trim()
+    const triggerPrefix = (config.triggerPrefix || PG_PUBSUB_TRIGGER_NAME).trim()
+    const queueSchema = (config.queue?.schema || PG_PUBSUB_QUEUE_SCHEMA).trim()
+    const queueTable = (config.queue?.table || PG_PUBSUB_QUEUE_TABLE).trim()
+
+    // Validate identifiers to prevent SQL injection (defense-in-depth)
+    assertSafeIdentifier(triggerSchema, 'triggerSchema')
+    assertSafeIdentifier(triggerPrefix, 'triggerPrefix')
+    assertSafeIdentifier(queueSchema, 'queue.schema')
+    assertSafeIdentifier(queueTable, 'queue.table')
+
     return {
       module: PgPubSubModule,
       providers: [
@@ -45,11 +57,11 @@ export class PgPubSubModule {
           provide: PG_PUBSUB_CONFIG,
           useValue: {
             ...config,
-            triggerSchema: (config.triggerSchema || PG_PUBSUB_TRIGGER_SCHEMA).trim(),
-            triggerPrefix: (config.triggerPrefix || PG_PUBSUB_TRIGGER_NAME).trim(),
+            triggerSchema,
+            triggerPrefix,
             queue: {
-              schema: PG_PUBSUB_QUEUE_SCHEMA,
-              table: PG_PUBSUB_QUEUE_TABLE,
+              schema: queueSchema,
+              table: queueTable,
               maxRetries: PG_PUBSUB_QUEUE_MAX_RETRIES,
               messageTTL: PG_PUBSUB_QUEUE_MESSAGE_TTL,
               cleanupInterval: PG_PUBSUB_QUEUE_CLEANUP_INTERVAL,

@@ -160,8 +160,12 @@ export class QueueService {
       const result = await this.pgPool.query(
         `
         DELETE FROM "${this.queueSchema}"."${this.queueTable}"
-        WHERE (status = '${MessageStatus.PROCESSED}' AND processed_at < $1)
+        WHERE id IN (
+          SELECT id FROM "${this.queueSchema}"."${this.queueTable}"
+          WHERE (status = '${MessageStatus.PROCESSED}' AND processed_at < $1)
             OR (created_at < $1 AND status = '${MessageStatus.FAILED}' AND retry_count >= $2)
+          LIMIT 1000
+        )
         RETURNING id
       `,
         [cutoffDate, this.maxRetries]

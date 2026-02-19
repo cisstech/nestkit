@@ -137,11 +137,14 @@ export class PgTriggerService {
       name: string
       schema: string
       table: string
-    }>(`
+    }>(
+      `
       SELECT DISTINCT trigger_name as name, trigger_schema as schema, event_object_table as table
       FROM information_schema.triggers
-      WHERE trigger_name LIKE '${this.config.triggerPrefix}_%'
-    `)
+      WHERE trigger_name LIKE $1
+    `,
+      [`${this.config.triggerPrefix}_%`]
+    )
     return (triggers ?? []).map((t) => ({ name: t.name, schema: t.schema, table: t.table }))
   }
 
@@ -152,8 +155,10 @@ export class PgTriggerService {
     await this.pgPool.query(triggers.map((t) => `DROP FUNCTION IF EXISTS ${t.schema}."${t.name}" CASCADE`).join('; '))
 
     // Clean up metadata
-    const names = triggers.map((t) => `'${t.name}'`).join(', ')
-    await this.pgPool.query(`DELETE FROM "${this.metaSchema}"."${this.metaTable}" WHERE trigger_name IN (${names})`)
+    const names = triggers.map((t) => t.name)
+    await this.pgPool.query(`DELETE FROM "${this.metaSchema}"."${this.metaTable}" WHERE trigger_name = ANY($1)`, [
+      names,
+    ])
   }
 
   private async createTriggers(
@@ -239,12 +244,15 @@ export class PgTriggerService {
         `)
 
         // Attach trigger only if the table exists
-        const tableExists = await this.pgPool.query<{ exists: boolean }>(`
+        const tableExists = await this.pgPool.query<{ exists: boolean }>(
+          `
           SELECT EXISTS (
             SELECT 1 FROM information_schema.tables
-            WHERE table_schema = '${t.schema}' AND table_name = '${t.table}'
+            WHERE table_schema = $1 AND table_name = $2
           ) as exists
-        `)
+        `,
+          [t.schema, t.table]
+        )
 
         if (tableExists?.[0]?.exists) {
           await this.pgPool.query(`
