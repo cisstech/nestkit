@@ -127,6 +127,49 @@ export class DataService {
 }
 ```
 
+### Disable Triggers for Specific Operations
+
+When performing bulk operations like cascade deletes, you may want to prevent pg-pubsub from generating notifications for rows that are being deleted as part of the cascade. Use `withTriggersDisabled` to run operations silently:
+
+```typescript
+import { Injectable } from '@nestjs/common'
+import { PgPubSubService } from '@cisstech/nestjs-pg-pubsub'
+import { Customer } from './entities/customer.entity'
+
+@Injectable()
+export class CustomerService {
+  constructor(private readonly pgPubSubService: PgPubSubService) {}
+
+  async deleteCustomerWithCascade(customerId: string): Promise<void> {
+    // Delete customer and all related entities without triggering notifications
+    await this.pgPubSubService.withTriggersDisabled(async (entityManager) => {
+      await entityManager.getRepository(Customer).delete(customerId)
+      // Orders, invoices, etc. deleted via CASCADE won't trigger notifications
+    })
+  }
+}
+```
+
+This method:
+
+- Creates a transaction with `SET LOCAL pg_pubsub.disabled = 'true'`
+- Provides a TypeORM `EntityManager` for database operations
+- Automatically commits on success, rolls back on error
+- Only affects the current transaction (other sessions are not impacted)
+
+#### Raw SQL Alternative
+
+If you prefer to work without TypeORM entities, use `withTriggersDisabledRaw`:
+
+```typescript
+await this.pgPubSubService.withTriggersDisabledRaw(async (query) => {
+  await query('DELETE FROM orders WHERE customer_id = $1', [customerId])
+  await query('DELETE FROM customers WHERE id = $1', [customerId])
+})
+```
+
+This uses the dedicated pg pool and is independent of TypeORM.
+
 ## Multiple Listeners for the Same Table
 
 You can register multiple listeners for the same table to handle different aspects of changes:

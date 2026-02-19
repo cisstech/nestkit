@@ -7,6 +7,7 @@ import { ListenerDiscovery, PG_PUBSUB_CONFIG, PgPubSubConfig } from './pg-pubsub
 import {
   ListenerDiscoveryService,
   MessageProcessorService,
+  PgConnectionPoolService,
   PgLockService,
   PgTriggerService,
   QueueService,
@@ -28,6 +29,7 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
     private readonly config: PgPubSubConfig,
     private readonly dataSource: DataSource,
     private readonly pgLockService: PgLockService,
+    private readonly pgConnectionPoolService: PgConnectionPoolService,
     private readonly queueService: QueueService,
     private readonly triggerService: PgTriggerService,
     private readonly messageProcessorService: MessageProcessorService,
@@ -147,6 +149,44 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
       await entityManager.query("SET LOCAL pg_pubsub.disabled = 'true'")
       return callback(entityManager)
     })
+  }
+
+  /**
+   * Run raw SQL queries with pg-pubsub triggers disabled.
+   *
+   * Uses the dedicated pg pool (independent of TypeORM). Useful when you
+   * need to run bulk SQL without going through TypeORM entities.
+   *
+   * @example
+   * ```typescript
+   * await pgPubSubService.withTriggersDisabledRaw(async (query) => {
+   *   await query('DELETE FROM orders WHERE customer_id = $1', [customerId]);
+   *   await query('DELETE FROM customers WHERE id = $1', [customerId]);
+   * });
+   * ```
+   */
+  async withTriggersDisabledRaw<T>(
+    callback: (query: <R = unknown>(sql: string, params?: unknown[]) => Promise<R[]>) => Promise<T>
+  ): Promise<T> {
+    const client = await this.pgConnectionPoolService.acquireClient()
+    try {
+      await client.query('BEGIN')
+      await client.query("SET LOCAL pg_pubsub.disabled = 'true'")
+
+      const queryFn = async <R = unknown>(sql: string, params?: unknown[]): Promise<R[]> => {
+        const result = await client.query(sql, params)
+        return result.rows as R[]
+      }
+
+      const result = await callback(queryFn)
+      await client.query('COMMIT')
+      return result
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
   }
 
   private async setupListenersAndTriggers(): Promise<void> {

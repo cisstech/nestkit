@@ -246,6 +246,22 @@ When PostgreSQL sends notifications faster than the application can process them
 
 On startup, the library computes an MD5 hash of each trigger's configuration (events, fields, table, schema) and compares it to the hash stored in the `pg_pubsub_trigger_meta` metadata table. Triggers are only recreated when their configuration actually changes, avoiding unnecessary DDL on every restart.
 
+### Disabling Triggers for Bulk Operations
+
+When performing bulk operations like cascade deletes, use `withTriggersDisabled` to prevent notifications:
+
+```typescript
+// With TypeORM EntityManager
+await pgPubSubService.withTriggersDisabled(async (em) => {
+  await em.getRepository(Customer).delete(customerId)
+})
+
+// With raw SQL (uses dedicated pg pool)
+await pgPubSubService.withTriggersDisabledRaw(async (query) => {
+  await query('DELETE FROM customers WHERE id = $1', [customerId])
+})
+```
+
 ## Documentation
 
 For detailed documentation, examples, and advanced usage, please refer to the official documentation at <https://cisstech.github.io/nestkit/docs/nestjs-pg-pubsub/getting-started>
