@@ -1,328 +1,81 @@
 # Advanced Usage
 
-## Module Configuration Options
+## Configuration Reference
 
-The library provides configuration options to customize its behavior. You can pass an optional configuration object when initializing the PgPubSubModule in your module.
+All options except `databaseUrl` are optional.
 
 ```typescript
-import { Module } from '@nestjs/common'
-import { TypeOrmModule } from '@nestjs/typeorm'
-import { PgPubSubModule } from '@cisstech/nestjs-pg-pubsub'
+PgPubSubModule.forRoot({
+  databaseUrl: process.env.DATABASE_URL,
 
-@Module({
-  imports: [
-    TypeOrmModule.forRoot({
-      /* your TypeORM config */
-    }),
-    PgPubSubModule.forRoot({
-      databaseUrl: 'postgresql://user:password@localhost:5432/dbname',
-      ssl: {
-        rejectUnauthorized: true,
-        ca: fs.readFileSync('/path/to/ca.crt').toString(),
-      },
-      triggerSchema: 'myschema', // Default: 'public'
-      triggerPrefix: 'my_trigger_prefix', // Default: 'pubsub_trigger'
-      // Optional: dedicated pool config (independent of TypeORM)
-      pool: {
-        max: 2, // Default: 2
-      },
-      queue: {
-        table: 'custom_queue_table', // Default: 'pg_pubsub_queue'
-        maxRetries: 5, // Default: 5
-        messageTTL: 24 * 60 * 60 * 1000, // Default: 24 hours
-        cleanupInterval: 60 * 60 * 1000, // Default: 1 hour
-        batchSize: 100, // Default: 100 — max messages fetched per pull cycle
-      },
-    }),
-  ],
+  ssl: { rejectUnauthorized: true, ca: '...' },
+
+  triggerPrefix: 'my_prefix', // default: 'pubsub_trigger'
+  triggerSchema: 'myschema', // default: 'public'
+
+  fallbackPollingInterval: 60_000, // ms, safety-net polling interval
+  lockDuration: 5_000, // ms, advisory lock duration for DDL setup
+
+  pool: {
+    max: 5, // dedicated pg.Pool connections (independent of TypeORM)
+  },
+
+  queue: {
+    table: 'pg_pubsub_queue',
+    batchSize: 100, // max messages per pull cycle
+    drainInterval: 50, // ms, pause between drain loop iterations
+    processingTimeout: 300_000, // ms, after this 'processing' messages are considered orphaned
+    maxRetries: 5,
+    messageTTL: 86_400_000, // ms, cleanup threshold for old messages (24h)
+    cleanupInterval: 3_600_000, // ms, how often the cleanup job runs (1h)
+  },
 })
-export class AppModule {}
 ```
 
-- **ssl**: Optional SSL configuration for secure database connections. This is passed directly to the underlying `pg-listen` library (which uses `node-postgres`). You can provide any SSL options supported by `node-postgres`, such as:
+### Key Options Explained
 
-  - `rejectUnauthorized`: Whether to reject unauthorized connections (set to `true` in production)
-  - `ca`: Certificate authority certificate(s)
-  - `key`: Client private key
-  - `cert`: Client certificate
+**`triggerPrefix`**: All triggers created by the library are named `{triggerPrefix}_{table_name}`. On startup, triggers matching this prefix that are no longer needed are dropped. Choose a unique prefix per module if you use multiple `PgPubSubModule.forRoot()` registrations.
 
-- **triggerPrefix**: Defines the prefix used for all database triggers dynamically created by the library. This is **critical** since during initialization, the library will automatically delete any existing database triggers whose names start with this prefix before creating new ones.
+**`queue.drainInterval`**: After processing a batch, the drain loop waits this long before fetching the next batch. Prevents tight-looping that could saturate the database under high throughput. Set to `0` to disable.
 
-- **triggerSchema**: The PostgreSQL schema where the tables and triggers are located.
+**`queue.processingTimeout`**: Messages are moved to `processing` while being handled. If a message stays in `processing` longer than this timeout (e.g., the process crashed), it is considered orphaned and reset to `pending` on the next startup. Must be longer than your slowest listener.
 
-- **queue.table**: Name of the queue table to store messages.
+**`pool.max`**: The library uses its own `pg.Pool` for all SQL operations (queue reads, advisory locks, trigger DDL). This pool is completely independent of TypeORM's pool, ensuring pg-pubsub keeps working even when TypeORM's pool is exhausted.
 
-- **queue.maxRetries**: Maximum number of retry attempts for failed messages.
+## Controlling the Listener at Runtime
 
-- **queue.messageTTL**: How long to keep messages before they're cleaned up (in milliseconds).
-
-- **queue.cleanupInterval**: How often to run the cleanup job (in milliseconds).
-
-- **queue.batchSize**: Maximum number of messages fetched per pull cycle (default: 100).
-
-- **pool.max**: Maximum number of connections in the dedicated pool (default: 2). This pool is independent of TypeORM's connection pool, so pg-pubsub operations are never blocked by TypeORM pool exhaustion.
-
-## Message Processing Architecture
-
-The library uses a hybrid approach to message processing for optimal performance and reliability:
-
-1. **Immediate Processing**: When a database change occurs, the trigger sends a notification with just the message ID. The service immediately pulls and processes that message.
-
-2. **Fallback Polling**: In addition, a low-frequency polling mechanism ensures that no messages are missed, even if notifications are lost or the service is temporarily down.
-
-3. **Ordered Processing**: Messages are processed in the order they were created, based on their ID.
-
-4. **Transaction Safety**: The system uses PostgreSQL advisory locks and `SELECT FOR UPDATE SKIP LOCKED` to ensure messages are processed exactly once, even in distributed environments.
-
-5. **Backpressure**: At most one pull cycle runs at a time. If new notifications arrive during processing, they are coalesced into a single re-fetch once the current cycle completes.
-
-6. **Conditional Trigger DDL**: On startup, trigger functions are fingerprinted with an MD5 hash (stored in the `pg_pubsub_trigger_meta` metadata table). Triggers are only recreated when their configuration actually changes, avoiding unnecessary DDL on every restart.
-
-## Controlling the Listener
-
-The library provides methods to control the behavior of the PostgreSQL listener at runtime:
-
-### Pause and Resume
-
-You can pause and resume the listener as needed:
+### Pause / Resume
 
 ```typescript
-import { Injectable } from '@nestjs/common'
-import { PgPubSubService } from '@cisstech/nestjs-pg-pubsub'
-
-@Injectable()
-export class ListenerControlService {
-  constructor(private readonly pgPubSubService: PgPubSubService) {}
-
-  async pauseListener(): Promise<void> {
-    await this.pgPubSubService.pause()
-  }
-
-  async resumeListener(): Promise<void> {
-    await this.pgPubSubService.resume()
-  }
-}
+await this.pgPubSubService.pause() // stop listening, stop processing notifications
+await this.pgPubSubService.resume() // reconnect and start listening again
 ```
+
+Messages inserted while paused accumulate in the queue and are processed on resume.
 
 ### Suspend and Run
 
-Sometimes you might want to temporarily suspend the listener while performing certain operations:
+Pause, execute a callback, resume (even if the callback throws):
 
 ```typescript
-import { Injectable } from '@nestjs/common'
-import { PgPubSubService } from '@cisstech/nestjs-pg-pubsub'
-
-@Injectable()
-export class DataService {
-  constructor(private readonly pgPubSubService: PgPubSubService) {}
-
-  async performBulkOperations(): Promise<void> {
-    // Suspend the listener while performing bulk operations
-    await this.pgPubSubService.suspendAndRun(async () => {
-      // Perform your operations here
-      // No events will be processed during this time
-    })
-    // Listener is automatically resumed after the callback completes
-  }
-}
+await this.pgPubSubService.suspendAndRun(async () => {
+  await this.runMigrations()
+})
 ```
 
 ### Disable Triggers for Specific Operations
 
-When performing bulk operations like cascade deletes, you may want to prevent pg-pubsub from generating notifications for rows that are being deleted as part of the cascade. Use `withTriggersDisabled` to run operations silently:
+When performing bulk operations (cascade deletes, data migrations), suppress trigger notifications with `withTriggersDisabled`. This sets `SET LOCAL pg_pubsub.disabled = 'true'` and only affects the current transaction. Other sessions are not impacted.
 
 ```typescript
-import { Injectable } from '@nestjs/common'
-import { PgPubSubService } from '@cisstech/nestjs-pg-pubsub'
-import { Customer } from './entities/customer.entity'
+// TypeORM variant: provides an EntityManager
+await this.pgPubSubService.withTriggersDisabled(async (em) => {
+  await em.getRepository(Customer).delete(customerId)
+})
 
-@Injectable()
-export class CustomerService {
-  constructor(private readonly pgPubSubService: PgPubSubService) {}
-
-  async deleteCustomerWithCascade(customerId: string): Promise<void> {
-    // Delete customer and all related entities without triggering notifications
-    await this.pgPubSubService.withTriggersDisabled(async (entityManager) => {
-      await entityManager.getRepository(Customer).delete(customerId)
-      // Orders, invoices, etc. deleted via CASCADE won't trigger notifications
-    })
-  }
-}
-```
-
-This method:
-
-- Creates a transaction with `SET LOCAL pg_pubsub.disabled = 'true'`
-- Provides a TypeORM `EntityManager` for database operations
-- Automatically commits on success, rolls back on error
-- Only affects the current transaction (other sessions are not impacted)
-
-#### Raw SQL Alternative
-
-If you prefer to work without TypeORM entities, use `withTriggersDisabledRaw`:
-
-```typescript
+// Raw SQL variant: uses the dedicated pg pool
 await this.pgPubSubService.withTriggersDisabledRaw(async (query) => {
   await query('DELETE FROM orders WHERE customer_id = $1', [customerId])
   await query('DELETE FROM customers WHERE id = $1', [customerId])
 })
-```
-
-This uses the dedicated pg pool and is independent of TypeORM.
-
-## Multiple Listeners for the Same Table
-
-You can register multiple listeners for the same table to handle different aspects of changes:
-
-```typescript
-@Injectable()
-@RegisterPgTableChangeListener(User, { events: ['INSERT'] })
-export class UserCreationListener implements PgTableChangeListener<User> {
-  async process(changes: PgTableChanges<User>): Promise<void> {
-    // Handle only new user creation
-  }
-}
-
-@Injectable()
-@RegisterPgTableChangeListener(User, { events: ['UPDATE'] })
-export class UserUpdateListener implements PgTableChangeListener<User> {
-  async process(changes: PgTableChanges<User>): Promise<void> {
-    // Handle only user updates
-  }
-}
-```
-
-The library will automatically merge the event registrations into a single PostgreSQL trigger function for optimal performance.
-
-## Selective Error Handling
-
-The library allows you to selectively mark specific messages as failed:
-
-```typescript
-@Injectable()
-@RegisterPgTableChangeListener(User)
-export class UserListener implements PgTableChangeListener<User> {
-  async process(changes: PgTableChanges<User>, onError?: PgTableChangeErrorHandler): Promise<void> {
-    // Process each message individually for fine-grained error handling
-    for (const change of changes.all) {
-      try {
-        // Process the change
-        await this.processChange(change)
-      } catch (error) {
-        // Mark only this specific message as failed
-        onError?.([change.id])
-        // Continue processing other messages
-      }
-    }
-  }
-
-  private async processChange(change: PgTableChangePayload<User>): Promise<void> {
-    // Process a single change
-  }
-}
-```
-
-## Queue Metadata for Retry Handling
-
-Each change payload includes `_metadata` with retry information. This is useful when syncing to external systems (Kafka, Redis, APIs) where stale retry data could cause issues.
-
-**Metadata fields:**
-
-- `retry_count`: Number of failures (0 = first attempt, 1 = 1st retry, etc.)
-- `created_at`: When the message was originally queued
-
-### Example: Syncing to External Systems with Retry Handling
-
-```typescript
-import { Injectable } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
-import {
-  RegisterPgTableChangeListener,
-  PgTableChangeListener,
-  PgTableChanges,
-  PgTableChangeErrorHandler,
-} from '@cisstech/nestjs-pg-pubsub'
-import { User } from './entities/user.entity'
-
-@Injectable()
-@RegisterPgTableChangeListener(User)
-export class UserKafkaSyncListener implements PgTableChangeListener<User> {
-  constructor(
-    @InjectRepository(User) private userRepository: Repository<User>,
-    private redisCache: RedisService
-  ) {}
-
-  async process(changes: PgTableChanges<User>, onError?: PgTableChangeErrorHandler): Promise<void> {
-    for (const change of changes.all) {
-      try {
-        const retryCount = change._metadata?.retry_count ?? 0
-
-        // For retries, fetch fresh data to avoid syncing stale info
-        let userData = change.data
-        if (retryCount >= 1) {
-          const latestUser = await this.userRepository.findOne({
-            where: { id: change.data.id },
-          })
-          if (!latestUser) {
-            console.log(`User ${change.data.id} no longer exists, skipping`)
-            continue
-          }
-          userData = latestUser
-        }
-        if (retryCount < 1) {
-          await this.callExternalAPI(userData)
-        } else {
-          // Use circuit breaker or fallback for persistent failures
-          await this.sendToDeadLetterQueue(userData)
-        }
-      } catch (error) {
-        onError?.([change.id])
-      }
-    }
-  }
-
-  private async callExternalAPI(user: User): Promise<void> {
-    // Implementation...
-  }
-
-  private async sendToDeadLetterQueue(user: User): Promise<void> {
-    // Implementation...
-  }
-}
-```
-
-## Publishing Custom Events from PostgreSQL
-
-You can publish custom events directly from PostgreSQL by sending a notification:
-
-```sql
-CREATE OR REPLACE FUNCTION notify_custom_event()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Send notification with just the message ID
-  PERFORM pg_notify('custom-event', 'Hello world');
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER user_login_trigger
-  AFTER INSERT ON user_login_history
-  FOR EACH ROW
-  EXECUTE PROCEDURE notify_custom_event();
-```
-
-Then subscribe to these events in your NestJS application:
-
-```typescript
-@Injectable()
-export class AuthEventsService implements OnModuleInit {
-  constructor(private readonly pgPubSubService: PgPubSubService) {}
-
-  async onModuleInit(): Promise<void> {
-    await this.pgPubSubService.susbcribe('custom-event', (payload) => {
-      console.log(`Received notification for message:`, payload)
-    })
-  }
-}
 ```
