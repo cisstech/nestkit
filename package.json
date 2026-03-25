@@ -56,7 +56,8 @@
     "release:major": "standard-version --release-as major",
     "release:minor": "standard-version --release-as minor",
     "release:patch": "standard-version --release-as patch",
-    "test:integration": "jest --config=jest.config.ts --testMatch='**/*.integration.spec.ts' --runInBand --detectOpenHandles"
+    "test:integration": "jest --config=jest.config.ts --testMatch='**/*.integration.spec.ts' --runInBand --detectOpenHandles",
+    "test:stress": "jest --config=libs/pg-pubsub/jest.config.ts --testPathIgnorePatterns='integration' --testMatch='**/*.stress.spec.ts' --runInBand --detectOpenHandles"
   },
   "private": true,
   "dependencies": {
