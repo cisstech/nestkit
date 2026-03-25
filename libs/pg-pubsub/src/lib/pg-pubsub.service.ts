@@ -3,7 +3,13 @@ import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nest
 import createPostgresSubscriber, { Subscriber } from 'pg-listen'
 import { Subscription, interval } from 'rxjs'
 import { DataSource, EntityManager } from 'typeorm'
-import { ListenerDiscovery, PG_PUBSUB_CONFIG, PgPubSubConfig } from './pg-pubsub'
+import {
+  ListenerDiscovery,
+  PG_PUBSUB_CONFIG,
+  PG_PUBSUB_FALLBACK_POLLING_INTERVAL,
+  PG_PUBSUB_LOCK_DURATION,
+  PgPubSubConfig,
+} from './pg-pubsub'
 import {
   ListenerDiscoveryService,
   MessageProcessorService,
@@ -41,21 +47,22 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
 
     await this.pgLockService.tryLock({
       key: 'pg_pubsub',
-      duration: 5_000,
+      duration: this.config.lockDuration ?? PG_PUBSUB_LOCK_DURATION,
       onAccept: async () => {
-        await this.queueService.setup()
+        await this.queueService.ensureQueueTable()
         await this.setupListenersAndTriggers()
       },
       onReject: () => this.logger.warn('Another instance is already updating PubSub triggers'),
     })
 
+    await this.queueService.startWorker()
     await this.resume()
   }
 
   async onModuleDestroy(): Promise<void> {
     this.pollingSubscription?.unsubscribe()
 
-    await this.queueService.teardown()
+    await this.queueService.stopWorker()
     await this.postgresSubscriber?.close()
   }
 
@@ -207,7 +214,7 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
     })
 
     // Fallback polling to catch messages missed due to notification failures
-    const fallbackInterval = 60_000
+    const fallbackInterval = this.config.fallbackPollingInterval ?? PG_PUBSUB_FALLBACK_POLLING_INTERVAL
     this.pollingSubscription = interval(fallbackInterval).subscribe(() => {
       this.messageProcessorService.pullAndProcessMessages(this.config.triggerPrefix!, this.discovery).catch((error) => {
         this.logger.error('Error during fallback message polling:', error)

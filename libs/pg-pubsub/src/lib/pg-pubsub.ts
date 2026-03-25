@@ -44,6 +44,33 @@ export const PG_PUBSUB_QUEUE_CLEANUP_INTERVAL = 60 * 60 * 1000
 export const PG_PUBSUB_QUEUE_BATCH_SIZE = 100
 
 /**
+ * Default processing timeout in milliseconds.
+ * Messages stuck in 'processing' longer than this are considered orphaned.
+ */
+export const PG_PUBSUB_QUEUE_PROCESSING_TIMEOUT = 5 * 60 * 1000
+
+/**
+ * Default fallback polling interval in milliseconds.
+ */
+export const PG_PUBSUB_FALLBACK_POLLING_INTERVAL = 60_000
+
+/**
+ * Default advisory lock duration in milliseconds.
+ */
+export const PG_PUBSUB_LOCK_DURATION = 5_000
+
+/**
+ * Default delay in milliseconds between drain loop iterations.
+ * Gives the database breathing room under high message volume.
+ */
+export const PG_PUBSUB_DRAIN_INTERVAL = 50
+
+/**
+ * Default maximum number of connections in the dedicated pool.
+ */
+export const PG_PUBSUB_POOL_MAX = 5
+
+/**
  * Type for a PostgreSQL table INSERT payload.
  */
 export type PgTableInsertPayload<TRow = unknown> = {
@@ -266,6 +293,19 @@ export type PgPubSubConfig = {
   queue?: QueueConfig
 
   /**
+   * Fallback polling interval in milliseconds.
+   * Messages are polled at this interval as a safety net in case LISTEN/NOTIFY misses events.
+   * @default PG_PUBSUB_FALLBACK_POLLING_INTERVAL
+   */
+  fallbackPollingInterval?: number
+
+  /**
+   * Duration of the advisory lock in milliseconds for DDL/trigger setup.
+   * @default PG_PUBSUB_LOCK_DURATION
+   */
+  lockDuration?: number
+
+  /**
    * Dedicated PG pool configuration.
    * This pool is independent of TypeORM's connection pool, ensuring that
    * pg-pubsub operations are never blocked by TypeORM pool exhaustion.
@@ -340,9 +380,23 @@ export interface QueueConfig {
 
   /**
    * Maximum number of messages to fetch per pull cycle.
-   * @default 100
+   * @default PG_PUBSUB_QUEUE_BATCH_SIZE
    */
   batchSize?: number
+
+  /**
+   * Timeout in milliseconds after which a 'processing' message is considered orphaned.
+   * Must be long enough for your slowest listener to complete.
+   * @default PG_PUBSUB_QUEUE_PROCESSING_TIMEOUT
+   */
+  processingTimeout?: number
+
+  /**
+   * Delay in milliseconds between drain loop iterations.
+   * Prevents tight-looping under high message volume.
+   * @default PG_PUBSUB_DRAIN_INTERVAL
+   */
+  drainInterval?: number
 }
 
 /**
@@ -351,7 +405,7 @@ export interface QueueConfig {
 export interface PoolConfig {
   /**
    * Maximum number of connections in the dedicated pool.
-   * @default 2
+   * @default PG_PUBSUB_POOL_MAX
    */
   max?: number
 }

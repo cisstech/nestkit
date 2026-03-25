@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test } from '@nestjs/testing'
-import { ListenerDiscovery, PgTableChangeListener, PgTableInsertPayload } from '../pg-pubsub'
+import { ListenerDiscovery, PG_PUBSUB_CONFIG, PgTableChangeListener, PgTableInsertPayload } from '../pg-pubsub'
 import { MessageProcessorService } from './message-processor.service'
 import { QueueService } from './queue.service'
 
@@ -37,6 +37,10 @@ describe('MessageProcessorService', () => {
           provide: QueueService,
           useValue: queueService,
         },
+        {
+          provide: PG_PUBSUB_CONFIG,
+          useValue: { queue: { drainInterval: 0 } },
+        },
       ],
     }).compile()
 
@@ -70,13 +74,14 @@ describe('MessageProcessorService', () => {
         tableNames: ['users'],
       })
 
-      // Mock queue service to return messages
-      queueService.fetchPendingMessages.mockResolvedValue(mockMessages)
+      // Mock queue service to return messages, then empty on drain
+      queueService.fetchPendingMessages.mockResolvedValueOnce(mockMessages).mockResolvedValueOnce([])
 
       await messageProcessorService.pullAndProcessMessages('test_channel', mockDiscovery)
 
       // Verify messages were processed
       expect(queueService.fetchPendingMessages).toHaveBeenCalledWith('test_channel')
+      expect(queueService.fetchPendingMessages).toHaveBeenCalledTimes(2)
       expect(queueService.markAsProcessed).toHaveBeenCalledWith([1])
     })
 
@@ -97,7 +102,7 @@ describe('MessageProcessorService', () => {
       const mockDiscovery = createListenerDiscovery()
 
       // Mock queue service to return messages
-      queueService.fetchPendingMessages.mockResolvedValue(mockMessages)
+      queueService.fetchPendingMessages.mockResolvedValueOnce(mockMessages).mockResolvedValueOnce([])
 
       await messageProcessorService.pullAndProcessMessages('test_channel', mockDiscovery)
 
@@ -190,11 +195,12 @@ describe('MessageProcessorService', () => {
         users: [usersListener],
       }
 
-      // This should not throw
       await messageProcessorService['processChanges'](changes, listenersMap)
 
-      // Verify call didn't crash the service
+      // Verify listener was called and message IDs were marked as failed
       expect(usersListener.process).toHaveBeenCalled()
+      expect(queueService.markAsFailed).toHaveBeenCalledWith([1])
+      expect(queueService.markAsProcessed).toHaveBeenCalledWith([])
     })
 
     it('should group changes by table', async () => {

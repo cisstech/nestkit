@@ -19,6 +19,7 @@ describe('QueueService', () => {
       messageTTL: 3600000,
       cleanupInterval: 60000,
       batchSize: 100,
+      processingTimeout: 300000,
     },
   }
 
@@ -48,14 +49,27 @@ describe('QueueService', () => {
     jest.clearAllMocks()
   })
 
-  describe('setup', () => {
-    it('should create queue table and start cleanup', async () => {
-      const startCleanupSpy = jest.spyOn(queueService as any, 'startCleanup')
+  describe('ensureQueueTable', () => {
+    it('should create queue table and indexes', async () => {
+      await queueService.ensureQueueTable()
 
-      await queueService.setup()
+      expect(pgPool.query).toHaveBeenCalledWith(
+        expect.stringContaining(`CREATE TABLE IF NOT EXISTS "${config.queue.schema}"."${config.queue.table}"`)
+      )
+    })
+  })
 
-      expect(pgPool.query).toHaveBeenCalled()
-      expect(startCleanupSpy).toHaveBeenCalled()
+  describe('startWorker', () => {
+    it('should recover orphans, run initial cleanup, and start periodic cleanup', async () => {
+      const cleanupSpy = jest.spyOn(queueService as any, 'cleanupOldMessages').mockResolvedValue(undefined)
+      const recoverSpy = jest.spyOn(queueService as any, 'recoverOrphanedMessages').mockResolvedValue(undefined)
+      const startPeriodicCleanupSpy = jest.spyOn(queueService as any, 'startPeriodicCleanup')
+
+      await queueService.startWorker()
+
+      expect(recoverSpy).toHaveBeenCalled()
+      expect(cleanupSpy).toHaveBeenCalled()
+      expect(startPeriodicCleanupSpy).toHaveBeenCalled()
     })
   })
 
@@ -68,7 +82,7 @@ describe('QueueService', () => {
 
       expect(pgPool.query).toHaveBeenCalledWith(
         expect.stringContaining(`UPDATE "${config.queue.schema}"."${config.queue.table}"`),
-        [config.queue.maxRetries, 'test_channel', config.queue.batchSize]
+        [config.queue.maxRetries, 'test_channel', config.queue.batchSize, 300000]
       )
       expect(result).toEqual(mockMessages)
     })
@@ -123,6 +137,44 @@ describe('QueueService', () => {
         expect.stringContaining(`DELETE FROM "${config.queue.schema}"."${config.queue.table}"`),
         expect.any(Array)
       )
+    })
+
+    it('should also delete stale processing messages older than TTL', async () => {
+      pgPool.query.mockResolvedValueOnce([{ id: 3 }])
+
+      await (queueService as any).cleanupOldMessages()
+
+      const query = pgPool.query.mock.calls[0][0]
+      expect(query).toContain(`status = 'processing'`)
+    })
+  })
+
+  describe('recoverOrphanedMessages', () => {
+    it('should reset processing messages back to pending only when next_retry_at has passed', async () => {
+      pgPool.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }, { id: 3 }])
+
+      await queueService['recoverOrphanedMessages']()
+
+      expect(pgPool.query).toHaveBeenCalledWith(expect.stringContaining(`SET status = 'pending'`))
+      expect(pgPool.query).toHaveBeenCalledWith(expect.stringContaining(`WHERE status = 'processing'`))
+      expect(pgPool.query).toHaveBeenCalledWith(
+        expect.stringContaining(`next_retry_at IS NULL OR next_retry_at <= NOW()`)
+      )
+    })
+
+    it('should do nothing when no orphaned messages exist', async () => {
+      pgPool.query.mockResolvedValueOnce([])
+
+      await queueService['recoverOrphanedMessages']()
+
+      expect(pgPool.query).toHaveBeenCalledTimes(1)
+    })
+
+    it('should throw error on database failure', async () => {
+      const error = new Error('Database error')
+      pgPool.query.mockRejectedValue(error)
+
+      await expect(queueService['recoverOrphanedMessages']()).rejects.toThrow(error)
     })
   })
 })
