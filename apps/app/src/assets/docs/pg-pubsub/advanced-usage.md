@@ -42,6 +42,86 @@ PgPubSubModule.forRoot({
 
 **`pool.max`**: The library uses its own `pg.Pool` for all SQL operations (queue reads, advisory locks, trigger DDL). This pool is completely independent of TypeORM's pool, ensuring pg-pubsub keeps working even when TypeORM's pool is exhausted.
 
+## Transaction Management
+
+By default, listeners run without a transaction: you handle errors granularly via `ctx.onError`. For listeners that need atomicity (e.g., writing to multiple tables), the library supports wrapping the entire listener execution in a transaction via an ORM-agnostic adapter.
+
+### 1. Provide a TransactionAdapter
+
+A `TransactionAdapter` opens a transaction, executes a callback, and commits on success or rolls back on failure. Here is a TypeORM example:
+
+```typescript
+import { TransactionAdapter } from '@cisstech/nestjs-pg-pubsub'
+import { DataSource, EntityManager } from 'typeorm'
+
+export class TypeOrmTransactionAdapter implements TransactionAdapter<EntityManager> {
+  constructor(private readonly dataSource: DataSource) {}
+
+  async run<T>(callback: (em: EntityManager) => Promise<T>): Promise<T> {
+    return this.dataSource.transaction(callback)
+  }
+}
+```
+
+Register it in the module config:
+
+```typescript
+PgPubSubModule.forRoot({
+  databaseUrl: process.env.DATABASE_URL,
+  transactionAdapter: new TypeOrmTransactionAdapter(dataSource),
+})
+```
+
+The adapter is ORM-agnostic. `TToken` can be anything: a Prisma `$transaction` client, a Knex transaction, etc.
+
+### 2. Mark Listeners as Transactional
+
+Add `transactional: true` to the decorator options:
+
+```typescript
+@Injectable()
+@RegisterPgTableChangeListener(Order, { transactional: true })
+export class OrderChangeListener implements PgTableChangeListener<Order, EntityManager> {
+  async process(changes: PgTableChanges<Order>, ctx: PgTableChangeContext<EntityManager>): Promise<void> {
+    const em = ctx.transaction! // EntityManager bound to the active transaction
+
+    for (const insert of changes.INSERT) {
+      await em.getRepository(AuditLog).save({
+        action: 'ORDER_CREATED',
+        orderId: insert.data.id,
+      })
+    }
+  }
+}
+```
+
+### How It Works
+
+- The library calls `transactionAdapter.run()` around your `process()` method
+- `ctx.transaction` receives the opaque token (e.g., `EntityManager`) from the adapter
+- On success, the transaction commits and messages are marked as processed
+- On failure (thrown error), the transaction rolls back and **all** message IDs in the batch are marked as failed for retry
+- `ctx.onError` is a no-op in transactional mode. To signal failure, throw an exception instead
+
+### Boot Validation
+
+If any listener has `transactional: true` but no `transactionAdapter` is provided in the config, the application fails to start with a clear error message. This prevents silent misconfiguration.
+
+### Concurrency
+
+Listener executions are bounded by a semaphore (default: 5 concurrent). Configure it with `queue.concurrency`:
+
+```typescript
+PgPubSubModule.forRoot({
+  databaseUrl: process.env.DATABASE_URL,
+  queue: {
+    concurrency: 10, // max parallel listener executions
+  },
+})
+```
+
+This applies to both transactional and non-transactional listeners.
+
 ## Controlling the Listener at Runtime
 
 ### Pause / Resume
