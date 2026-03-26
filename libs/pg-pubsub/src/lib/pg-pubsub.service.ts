@@ -3,7 +3,14 @@ import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nest
 import createPostgresSubscriber, { Subscriber } from 'pg-listen'
 import { Subscription, interval } from 'rxjs'
 import { DataSource, EntityManager } from 'typeorm'
-import { ListenerDiscovery, PG_PUBSUB_CONFIG, PgPubSubConfig } from './pg-pubsub'
+import {
+  ListenerDiscovery,
+  PG_PUBSUB_CONFIG,
+  PG_PUBSUB_FALLBACK_POLLING_INTERVAL,
+  PG_PUBSUB_LOCK_DURATION,
+  PgPubSubConfig,
+  ResolvedListener,
+} from './pg-pubsub'
 import {
   ListenerDiscoveryService,
   MessageProcessorService,
@@ -39,23 +46,26 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit(): Promise<void> {
     this.discovery = await this.listenerDiscoveryService.discoverListeners()
 
+    this.validateTransactionalListeners()
+
     await this.pgLockService.tryLock({
       key: 'pg_pubsub',
-      duration: 5_000,
+      duration: this.config.lockDuration ?? PG_PUBSUB_LOCK_DURATION,
       onAccept: async () => {
-        await this.queueService.setup()
+        await this.queueService.ensureQueueTable()
         await this.setupListenersAndTriggers()
       },
       onReject: () => this.logger.warn('Another instance is already updating PubSub triggers'),
     })
 
+    await this.queueService.startWorker()
     await this.resume()
   }
 
   async onModuleDestroy(): Promise<void> {
     this.pollingSubscription?.unsubscribe()
 
-    await this.queueService.teardown()
+    await this.queueService.stopWorker()
     await this.postgresSubscriber?.close()
   }
 
@@ -193,6 +203,19 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
     await this.triggerService.setupTriggers(this.discovery)
   }
 
+  private validateTransactionalListeners(): void {
+    const hasTransactional = Object.values(this.discovery.listenersMap)
+      .flat()
+      .some((l: ResolvedListener) => l.transactional)
+
+    if (hasTransactional && !this.config.transactionAdapter) {
+      throw new Error(
+        'pg-pubsub: transactional listeners detected but no transactionAdapter provided in config. ' +
+          'Either remove transactional: true from your listeners or provide a transactionAdapter in PgPubSubModule.forRoot().'
+      )
+    }
+  }
+
   private async listenForChanges(): Promise<void> {
     if (this.pollingSubscription) return
 
@@ -207,7 +230,7 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
     })
 
     // Fallback polling to catch messages missed due to notification failures
-    const fallbackInterval = 60_000
+    const fallbackInterval = this.config.fallbackPollingInterval ?? PG_PUBSUB_FALLBACK_POLLING_INTERVAL
     this.pollingSubscription = interval(fallbackInterval).subscribe(() => {
       this.messageProcessorService.pullAndProcessMessages(this.config.triggerPrefix!, this.discovery).catch((error) => {
         this.logger.error('Error during fallback message polling:', error)

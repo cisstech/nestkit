@@ -1,64 +1,57 @@
-# @cisstech/nestjs-pg-pubsub
+# Getting Started
 
-<div align="center">
+## What This Library Does
 
-A NestJS module for real-time PostgreSQL notifications using PubSub
+This library turns PostgreSQL into a reliable change data capture (CDC) system for NestJS. When a row is inserted, updated or deleted in a monitored table, a PostgreSQL trigger persists the change in a queue table and sends a `NOTIFY`. The library picks up that notification, pulls pending messages from the queue, and dispatches them to your typed listener classes.
 
-[![CI](https://github.com/cisstech/nestkit/actions/workflows/ci.yml/badge.svg)](https://github.com/cisstech/nestkit/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/cisstech/nestkit/branch/main/graph/badge.svg)](https://codecov.io/gh/cisstech/nestkit)
-[![codefactor](https://www.codefactor.io/repository/github/cisstech/nestkit/badge/main)](https://www.codefactor.io/repository/github/cisstech/nestkit/overview/main)
-[![GitHub Tag](https://img.shields.io/github/tag/cisstech/nestkit.svg)](https://github.com/cisstech/nestkit/tags)
-[![npm package](https://img.shields.io/npm/v/@cisstech/nestjs-pg-pubsub.svg)](https://www.npmjs.org/package/@cisstech/nestjs-pg-pubsub)
-[![NPM downloads](http://img.shields.io/npm/dm/@cisstech/nestjs-pg-pubsub.svg)](https://npmjs.org/package/@cisstech/nestjs-pg-pubsub)
-[![licence](https://img.shields.io/github/license/cisstech/nestkit)](https://github.com/cisstech/nestkit/blob/main/LICENSE)
-[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
+The result: you get real-time reactivity (via `LISTEN/NOTIFY`) with guaranteed delivery (via the persistent queue). No external broker needed.
 
-</div>
+## Architecture
 
-## Overview
+```
+┌──────────────┐     trigger      ┌──────────────────┐    NOTIFY    ┌──────────────────┐
+│  Your Table  │ ──────────────►  │  pg_pubsub_queue │ ──────────►  │  PgPubSubService │
+│  (INSERT/    │                  │  (persistent)    │              │  (pull + drain)  │
+│   UPDATE/    │                  └──────────────────┘              └────────┬─────────┘
+│   DELETE)    │                                                            │
+└──────────────┘                                                            ▼
+                                                                   ┌──────────────────┐
+                                                                   │  Your Listeners  │
+                                                                   │  (@Register...)  │
+                                                                   └──────────────────┘
+```
 
-The NestJS PG-PubSub library is a powerful tool that facilitates real-time communication between your NestJS application and PostgreSQL database using the native PostgreSQL Pub/Sub mechanism. It allows your application to listen for changes on specific database tables and respond to those changes in real-time, making it ideal for building reactive applications with immediate data synchronization and event-driven workflows.
+### Message Lifecycle
 
-## Features
+1. **Capture**: a trigger fires on the monitored table and inserts a JSON payload into `pg_pubsub_queue` with status `pending`
+2. **Notify**: the same trigger sends a `pg_notify` with the channel name
+3. **Pull**: the service receives the notification and fetches pending messages with `SELECT FOR UPDATE SKIP LOCKED`
+4. **Process**: messages are grouped by table and dispatched to matching listeners
+5. **Ack/Fail**: successful messages go to `processed`; failed ones go to `failed` with exponential retry ($2^{n}$ minutes, up to `maxRetries`)
+6. **Cleanup**: a background job periodically deletes old processed/dead messages
 
-- **Real-Time Table Change Detection**: Automatically listen for INSERT, UPDATE, and DELETE events on PostgreSQL tables
-- **Decorator-Based Configuration**: Use intuitive decorators to register table change listeners
-- **Automatic Trigger Management**: Dynamically creates and manages PostgreSQL triggers
-- **Event Buffering and Batching**: Optimizes performance by buffering and batching events
-- **Entity Mapping**: Maps database column names to entity property names automatically
-- **Persistent Message Queue**: Messages are stored in a PostgreSQL table to prevent data loss
-- **Reactive Processing**: Immediately pulls and processes messages when notifications are received
-- **TTL and Retry System**: Implements time-to-live and automatic retries for failed message processing
-- **Message Ordering**: Preserves message processing order using row IDs
-- **Auto Cleanup**: Automatically removes old processed messages to keep the queue size manageable
-- **Multiple Subscribers**: Leverages PostgreSQL's native Pub/Sub to allow multiple application instances to subscribe to the same changes
-- **Error Handling**: Provides comprehensive error handling mechanisms
-- **Fallback Reliability**: Includes low-frequency background polling to ensure no messages are missed
-- **Dedicated Connection Pool**: Uses its own `pg.Pool`, independent of TypeORM, to avoid pool contention
-- **Backpressure**: Concurrent notifications are coalesced so at most one pull cycle runs at a time
-- **Smart Trigger Management**: Triggers are only recreated when their configuration actually changes
+### Safety Nets
 
-## Technical Architecture
+- **Fallback poller**: runs every `fallbackPollingInterval` (default 60s) to catch anything missed by `NOTIFY`
+- **Orphan recovery**: on startup, messages stuck in `processing` past their `processingTimeout` are reset to `pending`
+- **Backpressure**: concurrent notifications are coalesced so that at most one pull cycle runs at a time
+- **Trigger fingerprinting**: trigger DDL is hashed (MD5) and only recreated when config changes
 
-The library uses a hybrid architecture for optimal performance and reliability:
+### Important Constraints
 
-1. **Trigger-Based Detection**: PostgreSQL triggers capture table changes and store them in a queue table
-2. **Notification System**: Immediate notifications with message IDs are sent via PostgreSQL's NOTIFY
-3. **Message Queue**: Durable storage of change events in a queue table with status tracking
-4. **Hybrid Processing**:
-   - Reactive processing triggered by notifications
-   - Fallback polling for maximum reliability
-5. **Smart Batching**: Messages are processed in efficient batches while preserving order
-6. **Dedicated Pool**: All SQL operations run on an independent `pg.Pool`, decoupled from TypeORM
-7. **Backpressure**: Overlapping notifications are coalesced into a single re-fetch after the current cycle
-8. **Conditional DDL**: Trigger functions are fingerprinted with an MD5 hash (stored in `pg_pubsub_trigger_meta`) and only recreated when changed
+- **Do not open transactions inside listeners.** The listener runs inside the drain loop. A slow transaction blocks processing and can cause the `processingTimeout` to expire, leading to orphan recovery and duplicate processing.
+- **Keep listeners fast.** If you need heavy work, enqueue to an external job queue (Bull, etc.) from the listener.
+
+## Prerequisites
+
+- NestJS v10+ or v11+
+- PostgreSQL database
+- TypeORM configured in your application
 
 ## Additional Resources
 
-For more information about PostgreSQL's LISTEN/NOTIFY mechanism:
-
-- [PostgreSQL Documentation on NOTIFY](https://www.postgresql.org/docs/current/sql-notify.html)
-- [PostgreSQL Documentation on LISTEN](https://www.postgresql.org/docs/current/sql-listen.html)
+- [PostgreSQL NOTIFY](https://www.postgresql.org/docs/current/sql-notify.html)
+- [PostgreSQL LISTEN](https://www.postgresql.org/docs/current/sql-listen.html)
 
 ## License
 

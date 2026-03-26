@@ -44,6 +44,38 @@ export const PG_PUBSUB_QUEUE_CLEANUP_INTERVAL = 60 * 60 * 1000
 export const PG_PUBSUB_QUEUE_BATCH_SIZE = 100
 
 /**
+ * Default processing timeout in milliseconds.
+ * Messages stuck in 'processing' longer than this are considered orphaned.
+ */
+export const PG_PUBSUB_QUEUE_PROCESSING_TIMEOUT = 5 * 60 * 1000
+
+/**
+ * Default fallback polling interval in milliseconds.
+ */
+export const PG_PUBSUB_FALLBACK_POLLING_INTERVAL = 60_000
+
+/**
+ * Default advisory lock duration in milliseconds.
+ */
+export const PG_PUBSUB_LOCK_DURATION = 5_000
+
+/**
+ * Default delay in milliseconds between drain loop iterations.
+ * Gives the database breathing room under high message volume.
+ */
+export const PG_PUBSUB_DRAIN_INTERVAL = 50
+
+/**
+ * Default maximum number of connections in the dedicated pool.
+ */
+export const PG_PUBSUB_POOL_MAX = 5
+
+/**
+ * Default maximum number of concurrent listener executions.
+ */
+export const PG_PUBSUB_QUEUE_CONCURRENCY = 5
+
+/**
  * Type for a PostgreSQL table INSERT payload.
  */
 export type PgTableInsertPayload<TRow = unknown> = {
@@ -166,15 +198,42 @@ export type PgTableChanges<TRow = unknown> = {
 export type PgTableChangeErrorHandler = (ids: number[]) => void
 
 /**
+ * ORM-agnostic adapter for running listener logic inside a transaction.
+ * TToken is opaque to the library (e.g. EntityManager for TypeORM, PrismaClient for Prisma).
+ */
+export interface TransactionAdapter<TToken = unknown> {
+  /** Open a transaction, execute the callback, commit on success or rollback on error. */
+  run<T>(callback: (token: TToken) => Promise<T>): Promise<T>
+}
+
+/**
+ * Context passed to a listener's `process` method.
+ */
+export interface PgTableChangeContext<TToken = unknown> {
+  /** Callback to signal specific message IDs as failed (non-transactional mode). */
+  onError: PgTableChangeErrorHandler
+  /** Opaque transaction token. Present only when `transactional: true` and a transactionAdapter is configured. */
+  transaction?: TToken
+}
+
+/**
  * Type for a handler that listens to changes on a PostgreSQL table.
  */
-export interface PgTableChangeListener<TRow> {
+export interface PgTableChangeListener<TRow, TToken = unknown> {
   /**
    * Process the batch of changes received for a PostgreSQL table.
    * @param changes The batch of changes for the table.
-   * @param onError Callback to handle errors when processing a change. (used to mark the message as failed and retry later)
+   * @param ctx Context with error handling and optional transaction token.
    */
-  process(changes: PgTableChanges<TRow>, onError?: PgTableChangeErrorHandler): Promise<void>
+  process(changes: PgTableChanges<TRow>, ctx: PgTableChangeContext<TToken>): Promise<void>
+}
+
+/**
+ * A discovered listener with its resolved metadata.
+ */
+export interface ResolvedListener<TRow = unknown> {
+  instance: PgTableChangeListener<TRow>
+  transactional: boolean
 }
 
 /**
@@ -214,6 +273,13 @@ export type RegisterPgTableChangeListenerMetadata<T = any> = {
    * - If multiple listeners are registered for the same table, the values of this field will be merged.
    */
   payloadFields?: (keyof T)[]
+
+  /**
+   * Whether the listener should be invoked inside a transaction managed by the configured transactionAdapter.
+   * Requires a `transactionAdapter` in the module config. Validated at boot time.
+   * @default false
+   */
+  transactional?: boolean
 }
 
 /**
@@ -266,11 +332,30 @@ export type PgPubSubConfig = {
   queue?: QueueConfig
 
   /**
+   * Fallback polling interval in milliseconds.
+   * Messages are polled at this interval as a safety net in case LISTEN/NOTIFY misses events.
+   * @default PG_PUBSUB_FALLBACK_POLLING_INTERVAL
+   */
+  fallbackPollingInterval?: number
+
+  /**
+   * Duration of the advisory lock in milliseconds for DDL/trigger setup.
+   * @default PG_PUBSUB_LOCK_DURATION
+   */
+  lockDuration?: number
+
+  /**
    * Dedicated PG pool configuration.
    * This pool is independent of TypeORM's connection pool, ensuring that
    * pg-pubsub operations are never blocked by TypeORM pool exhaustion.
    */
   pool?: PoolConfig
+
+  /**
+   * ORM-agnostic transaction adapter for listeners marked with `transactional: true`.
+   * The library calls `adapter.run()` to wrap listener execution in a transaction.
+   */
+  transactionAdapter?: TransactionAdapter
 
   /**
    * Custom lock service to use
@@ -340,9 +425,30 @@ export interface QueueConfig {
 
   /**
    * Maximum number of messages to fetch per pull cycle.
-   * @default 100
+   * @default PG_PUBSUB_QUEUE_BATCH_SIZE
    */
   batchSize?: number
+
+  /**
+   * Timeout in milliseconds after which a 'processing' message is considered orphaned.
+   * Must be long enough for your slowest listener to complete.
+   * @default PG_PUBSUB_QUEUE_PROCESSING_TIMEOUT
+   */
+  processingTimeout?: number
+
+  /**
+   * Delay in milliseconds between drain loop iterations.
+   * Prevents tight-looping under high message volume.
+   * @default PG_PUBSUB_DRAIN_INTERVAL
+   */
+  drainInterval?: number
+
+  /**
+   * Maximum number of listener executions running in parallel.
+   * Limits the number of concurrent transactions / async operations.
+   * @default PG_PUBSUB_QUEUE_CONCURRENCY
+   */
+  concurrency?: number
 }
 
 /**
@@ -351,7 +457,7 @@ export interface QueueConfig {
 export interface PoolConfig {
   /**
    * Maximum number of connections in the dedicated pool.
-   * @default 2
+   * @default PG_PUBSUB_POOL_MAX
    */
   max?: number
 }
@@ -411,8 +517,8 @@ export interface ListenerDiscovery {
   /** Table listeners. */
   listeners: TableListener[]
 
-  /** Map of listeners by table name. */
-  listenersMap: Record<string, PgTableChangeListener<unknown>[]>
+  /** Map of resolved listeners by table name. */
+  listenersMap: Record<string, ResolvedListener<unknown>[]>
 
   /** List of entity metadata. */
   entityMetadataList: EntityMetadata[]

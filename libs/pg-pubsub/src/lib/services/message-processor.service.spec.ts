@@ -1,6 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test } from '@nestjs/testing'
-import { ListenerDiscovery, PgTableChangeListener, PgTableInsertPayload } from '../pg-pubsub'
+import {
+  ListenerDiscovery,
+  PG_PUBSUB_CONFIG,
+  PgTableChangeListener,
+  PgTableInsertPayload,
+  ResolvedListener,
+} from '../pg-pubsub'
+import { Semaphore } from '../semaphore'
 import { MessageProcessorService } from './message-processor.service'
 import { QueueService } from './queue.service'
 
@@ -37,6 +44,10 @@ describe('MessageProcessorService', () => {
           provide: QueueService,
           useValue: queueService,
         },
+        {
+          provide: PG_PUBSUB_CONFIG,
+          useValue: { queue: { drainInterval: 0 } },
+        },
       ],
     }).compile()
 
@@ -65,18 +76,19 @@ describe('MessageProcessorService', () => {
           users: new Map([['name', 'name']]),
         },
         listenersMap: {
-          users: [] as unknown as PgTableChangeListener<unknown>[],
+          users: [] as ResolvedListener<unknown>[],
         },
         tableNames: ['users'],
       })
 
-      // Mock queue service to return messages
-      queueService.fetchPendingMessages.mockResolvedValue(mockMessages)
+      // Mock queue service to return messages, then empty on drain
+      queueService.fetchPendingMessages.mockResolvedValueOnce(mockMessages).mockResolvedValueOnce([])
 
       await messageProcessorService.pullAndProcessMessages('test_channel', mockDiscovery)
 
       // Verify messages were processed
       expect(queueService.fetchPendingMessages).toHaveBeenCalledWith('test_channel')
+      expect(queueService.fetchPendingMessages).toHaveBeenCalledTimes(2)
       expect(queueService.markAsProcessed).toHaveBeenCalledWith([1])
     })
 
@@ -97,7 +109,7 @@ describe('MessageProcessorService', () => {
       const mockDiscovery = createListenerDiscovery()
 
       // Mock queue service to return messages
-      queueService.fetchPendingMessages.mockResolvedValue(mockMessages)
+      queueService.fetchPendingMessages.mockResolvedValueOnce(mockMessages).mockResolvedValueOnce([])
 
       await messageProcessorService.pullAndProcessMessages('test_channel', mockDiscovery)
 
@@ -145,9 +157,9 @@ describe('MessageProcessorService', () => {
         process: jest.fn().mockResolvedValue(undefined),
       }
 
-      const listenersMap = {
-        users: [usersListener],
-        roles: [rolesListener],
+      const listenersMap: Record<string, ResolvedListener<unknown>[]> = {
+        users: [{ instance: usersListener, transactional: false }],
+        roles: [{ instance: rolesListener, transactional: false }],
       }
 
       await messageProcessorService['processChanges'](changes, listenersMap)
@@ -158,7 +170,7 @@ describe('MessageProcessorService', () => {
           all: expect.arrayContaining([changes[0]]),
           INSERT: expect.arrayContaining([changes[0]]),
         }),
-        expect.anything()
+        expect.objectContaining({ onError: expect.any(Function) })
       )
 
       expect(rolesListener.process).toHaveBeenCalledWith(
@@ -166,7 +178,7 @@ describe('MessageProcessorService', () => {
           all: expect.arrayContaining([changes[1]]),
           INSERT: expect.arrayContaining([changes[1]]),
         }),
-        expect.anything()
+        expect.objectContaining({ onError: expect.any(Function) })
       )
     })
 
@@ -186,15 +198,16 @@ describe('MessageProcessorService', () => {
         process: jest.fn().mockRejectedValue(new Error('Processing failed')),
       }
 
-      const listenersMap = {
-        users: [usersListener],
+      const listenersMap: Record<string, ResolvedListener<unknown>[]> = {
+        users: [{ instance: usersListener, transactional: false }],
       }
 
-      // This should not throw
       await messageProcessorService['processChanges'](changes, listenersMap)
 
-      // Verify call didn't crash the service
+      // Verify listener was called and message IDs were marked as failed
       expect(usersListener.process).toHaveBeenCalled()
+      expect(queueService.markAsFailed).toHaveBeenCalledWith([1])
+      expect(queueService.markAsProcessed).toHaveBeenCalledWith([])
     })
 
     it('should group changes by table', async () => {
@@ -219,8 +232,8 @@ describe('MessageProcessorService', () => {
         process: jest.fn().mockResolvedValue(undefined),
       }
 
-      const listenersMap = {
-        users: [usersListener],
+      const listenersMap: Record<string, ResolvedListener<unknown>[]> = {
+        users: [{ instance: usersListener, transactional: false }],
       }
 
       await messageProcessorService['processChanges'](changes, listenersMap)
@@ -232,8 +245,99 @@ describe('MessageProcessorService', () => {
           all: expect.arrayContaining([changes[0], changes[1]]),
           INSERT: expect.arrayContaining([changes[0], changes[1]]),
         }),
-        expect.anything()
+        expect.objectContaining({ onError: expect.any(Function) })
       )
+    })
+
+    it('should wrap transactional listeners with the transaction adapter', async () => {
+      const changes = [
+        {
+          id: 1,
+          event: 'INSERT' as const,
+          table: 'users',
+          data: { name: 'Test User' },
+        },
+      ]
+
+      const fakeToken = { fake: 'entityManager' }
+      const usersListener: PgTableChangeListener<unknown> = {
+        process: jest.fn().mockResolvedValue(undefined),
+      }
+
+      const listenersMap: Record<string, ResolvedListener<unknown>[]> = {
+        users: [{ instance: usersListener, transactional: true }],
+      }
+
+      // Inject a transaction adapter
+      ;(messageProcessorService as any).transactionAdapter = {
+        run: jest.fn().mockImplementation(async (cb: any) => cb(fakeToken)),
+      }
+
+      await messageProcessorService['processChanges'](changes, listenersMap)
+
+      expect(usersListener.process).toHaveBeenCalledWith(
+        expect.objectContaining({ all: expect.arrayContaining([changes[0]]) }),
+        expect.objectContaining({ transaction: fakeToken })
+      )
+    })
+
+    it('should mark all messages as failed when transactional listener throws', async () => {
+      const changes = [
+        { id: 1, event: 'INSERT' as const, table: 'users', data: {} },
+        { id: 2, event: 'INSERT' as const, table: 'users', data: {} },
+      ]
+
+      const usersListener: PgTableChangeListener<unknown> = {
+        process: jest.fn().mockRejectedValue(new Error('tx failed')),
+      }
+
+      const listenersMap: Record<string, ResolvedListener<unknown>[]> = {
+        users: [{ instance: usersListener, transactional: true }],
+      }
+
+      ;(messageProcessorService as any).transactionAdapter = {
+        run: jest.fn().mockImplementation(async (cb: any) => cb({})),
+      }
+
+      await messageProcessorService['processChanges'](changes, listenersMap)
+
+      expect(queueService.markAsFailed).toHaveBeenCalledWith([1, 2])
+      expect(queueService.markAsProcessed).toHaveBeenCalledWith([])
+    })
+
+    it('should respect concurrency limit', async () => {
+      let concurrent = 0
+      let maxConcurrent = 0
+
+      const slowListener: PgTableChangeListener<unknown> = {
+        process: jest.fn().mockImplementation(async () => {
+          concurrent++
+          maxConcurrent = Math.max(maxConcurrent, concurrent)
+          await new Promise((r) => setTimeout(r, 10))
+          concurrent--
+        }),
+      }
+
+      // 3 tables, each with 1 listener, concurrency = 2
+      const changes = [
+        { id: 1, event: 'INSERT' as const, table: 'a', data: {} },
+        { id: 2, event: 'INSERT' as const, table: 'b', data: {} },
+        { id: 3, event: 'INSERT' as const, table: 'c', data: {} },
+      ]
+
+      const listenersMap: Record<string, ResolvedListener<unknown>[]> = {
+        a: [{ instance: slowListener, transactional: false }],
+        b: [{ instance: slowListener, transactional: false }],
+        c: [{ instance: slowListener, transactional: false }],
+      }
+
+      // Replace semaphore with concurrency 2
+      ;(messageProcessorService as any).semaphore = new Semaphore(2)
+
+      await messageProcessorService['processChanges'](changes, listenersMap)
+
+      expect(maxConcurrent).toBeLessThanOrEqual(2)
+      expect(slowListener.process).toHaveBeenCalledTimes(3)
     })
   })
 

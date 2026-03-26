@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { Pool, PoolClient, PoolConfig } from 'pg'
-import { PG_PUBSUB_CONFIG, PgPubSubConfig } from '../pg-pubsub'
+import { PG_PUBSUB_CONFIG, PG_PUBSUB_POOL_MAX, PgPubSubConfig } from '../pg-pubsub'
 
 /**
  * Dedicated PostgreSQL connection pool for pg-pubsub operations,
@@ -17,7 +17,7 @@ export class PgConnectionPoolService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    const maxPoolSize = this.config.pool?.max ?? 2
+    const maxPoolSize = this.config.pool?.max ?? PG_PUBSUB_POOL_MAX
     if (!Number.isInteger(maxPoolSize) || maxPoolSize < 1) {
       throw new Error(`Invalid pg-pubsub pool.max value: ${maxPoolSize}. Must be a positive integer.`)
     }
