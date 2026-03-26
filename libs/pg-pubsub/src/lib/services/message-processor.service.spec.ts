@@ -3,11 +3,11 @@ import { Test } from '@nestjs/testing'
 import {
   ListenerDiscovery,
   PG_PUBSUB_CONFIG,
-  PgTableChangeContext,
   PgTableChangeListener,
   PgTableInsertPayload,
   ResolvedListener,
 } from '../pg-pubsub'
+import { Semaphore } from '../semaphore'
 import { MessageProcessorService } from './message-processor.service'
 import { QueueService } from './queue.service'
 
@@ -332,7 +332,7 @@ describe('MessageProcessorService', () => {
       }
 
       // Replace semaphore with concurrency 2
-      ;(messageProcessorService as any).semaphore = new (require('../semaphore').Semaphore)(2)
+      ;(messageProcessorService as any).semaphore = new Semaphore(2)
 
       await messageProcessorService['processChanges'](changes, listenersMap)
 
