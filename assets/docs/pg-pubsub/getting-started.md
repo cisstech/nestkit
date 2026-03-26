@@ -39,7 +39,8 @@ The result: you get real-time reactivity (via `LISTEN/NOTIFY`) with guaranteed d
 
 ### Important Constraints
 
-- **Do not open transactions inside listeners.** The listener runs inside the drain loop. A slow transaction blocks processing and can cause the `processingTimeout` to expire, leading to orphan recovery and duplicate processing.
+- **Avoid long-running work in listeners.** The listener runs inside the drain loop. A slow handler blocks processing and can cause the `processingTimeout` to expire, leading to orphan recovery and duplicate processing.
+- **Use transactional listeners for multi-table writes.** If your listener needs to write to several tables atomically, mark it as `transactional: true` and provide a `transactionAdapter` in the module config. See [Advanced Usage > Transaction Management](./advanced-usage#transaction-management).
 - **Keep listeners fast.** If you need heavy work, enqueue to an external job queue (Bull, etc.) from the listener.
 
 ## Prerequisites

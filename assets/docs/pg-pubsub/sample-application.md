@@ -64,7 +64,7 @@ The key piece is `NotificationChangeListener`:
 export class NotificationChangeListener implements PgTableChangeListener<Notification> {
   constructor(private readonly websocketGateway: WebsocketGateway) {}
 
-  async process(changes: PgTableChanges<Notification>): Promise<void> {
+  async process(changes: PgTableChanges<Notification>, ctx: PgTableChangeContext): Promise<void> {
     for (const insert of changes.INSERT) {
       this.websocketGateway.notifyUser(insert.data.userId, 'new-notification', {
         id: insert.data.id,
