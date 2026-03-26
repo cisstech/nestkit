@@ -1,201 +1,124 @@
 # Usage
 
-## 1. Module Registration
-
-First, register the PgPubSub module in your application:
+## Module Registration
 
 ```typescript
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { PgPubSubModule } from '@cisstech/nestjs-pg-pubsub'
+import { UserChangeListener } from './listeners/user-change.listener'
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      /* your TypeORM config */
+      /* ... */
     }),
-    PgPubSubModule.forRoot({
-      databaseUrl: 'postgresql://user:password@localhost:5432/dbname',
-      // Optional: SSL configuration for secure connections
-      ssl: {
-        rejectUnauthorized: false,
-      },
-      // Optional: dedicated pool config (independent of TypeORM)
-      pool: {
-        max: 2, // Default: 2
-      },
-      // Optional queue configuration
-      queue: {
-        maxRetries: 5, // Default: 5
-        messageTTL: 24 * 60 * 60 * 1000, // Default: 24 hours
-        cleanupInterval: 60 * 60 * 1000, // Default: 1 hour
-        batchSize: 100, // Default: 100 — max messages per pull cycle
-        table: 'pg_pubsub_queue', // Default: 'pg_pubsub_queue'
-      },
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-## 2. Define Your Entities
-
-Create TypeORM entities for the tables you want to monitor:
-
-```typescript
-// user.entity.ts
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
-
-@Entity('users')
-export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string
-
-  @Column()
-  name: string
-
-  @Column({ unique: true })
-  email: string
-}
-```
-
-## 3. Create Table Change Listeners
-
-Create classes that implement the `PgTableChangeListener` interface and decorate them with `@RegisterPgTableChangeListener`:
-
-```typescript
-import { Injectable } from '@nestjs/common'
-import {
-  RegisterPgTableChangeListener,
-  PgTableChangeListener,
-  PgTableChanges,
-  PgTableChangeErrorHandler,
-} from '@cisstech/nestjs-pg-pubsub'
-import { User } from './entities/user.entity'
-
-@Injectable()
-@RegisterPgTableChangeListener(User)
-export class UserTableChangeListener implements PgTableChangeListener<User> {
-  async process(changes: PgTableChanges<User>, onError?: PgTableChangeErrorHandler): Promise<void> {
-    try {
-      // Process all changes
-      changes.all.forEach((change) => {
-        console.log(`Change type: ${change.event} for user with id: ${change.data.id}`)
-
-        // Access metadata for retry information
-        if (change._metadata) {
-          console.log(`Retry count: ${change._metadata.retry_count}`)
-          console.log(`Created at: ${change._metadata.created_at}`)
-        }
-      })
-
-      // Process inserts
-      changes.INSERT.forEach((insert) => {
-        console.log(`New user created: ${insert.data.email}`)
-      })
-
-      // Process updates
-      changes.UPDATE.forEach((update) => {
-        console.log(`User updated: ${update.data.new.email} (was: ${update.data.old.email})`)
-        console.log(`Updated fields: ${update.data.updatedFields.join(', ')}`)
-      })
-
-      // Process deletes
-      changes.DELETE.forEach((deletion) => {
-        console.log(`User deleted: ${deletion.data.email}`)
-      })
-    } catch (error) {
-      // Mark specific messages as failed to be retried later
-      // Each change has an 'id' property that can be used for this purpose
-      if (onError) {
-        const failedIds = changes.all.map((change) => change.id)
-        onError(failedIds)
-      }
-      throw error
-    }
-  }
-}
-```
-
-## 4. Register Your Listeners
-
-Make sure to provide your listener in your module:
-
-```typescript
-import { Module } from '@nestjs/common'
-import { TypeOrmModule } from '@nestjs/typeorm'
-import { PgPubSubModule } from '@cisstech/nestjs-pg-pubsub'
-import { User } from './entities/user.entity'
-import { UserTableChangeListener } from './listeners/user-table-change.listener'
-
-@Module({
-  imports: [
-    TypeOrmModule.forFeature([User]),
     PgPubSubModule.forRoot({
       databaseUrl: process.env.DATABASE_URL,
     }),
   ],
-  providers: [UserTableChangeListener],
+  providers: [UserChangeListener],
 })
-export class UserModule {}
+export class AppModule {}
 ```
 
-## 5. Customizing Your Listeners
+That's all. The library creates the queue table and triggers on startup.
 
-You can customize what events to listen for and which fields to include in the payload:
+## Listening to Table Changes
+
+Decorate a class with `@RegisterPgTableChangeListener` and implement `PgTableChangeListener<T>`:
 
 ```typescript
 @Injectable()
-@RegisterPgTableChangeListener(User, {
-  events: ['INSERT', 'UPDATE'], // Only listen for INSERT and UPDATE events
-  payloadFields: ['id', 'email'], // Only include id and email in the payload
-})
-export class UserTableChangeListener implements PgTableChangeListener<User> {
-  // Implementation...
-}
-```
-
-## 6. Error Handling
-
-The library provides comprehensive error handling:
-
-```typescript
-async process(changes: PgTableChanges<User>, onError?: PgTableChangeErrorHandler): Promise<void> {
-  try {
-    // Process changes...
-
-    // If you need to mark specific messages as failed:
-    if (someCondition && onError) {
-      // Mark specific messages for retry
-      onError([changes.all[0].id, changes.all[1].id]);
-      return; // Exit early, no need to throw
+@RegisterPgTableChangeListener(User)
+export class UserChangeListener implements PgTableChangeListener<User> {
+  async process(changes: PgTableChanges<User>, onError?: PgTableChangeErrorHandler): Promise<void> {
+    for (const insert of changes.INSERT) {
+      console.log(`New user: ${insert.data.email}`)
     }
 
-    // Continue processing...
-  } catch (error) {
-    // For unhandled errors, mark all messages as failed
-    if (onError) {
-      onError(changes.all.map(change => change.id));
+    for (const update of changes.UPDATE) {
+      console.log(`Updated: ${update.data.updatedFields.join(', ')}`)
+      // update.data.old and update.data.new are available
+    }
+
+    for (const deletion of changes.DELETE) {
+      console.log(`Deleted: ${deletion.data.email}`)
     }
   }
 }
 ```
 
-## 7. Subscribe to Custom Events
-
-Besides table changes, you can also subscribe to custom PostgreSQL notification events:
+### Filtering Events and Fields
 
 ```typescript
-import { Injectable, OnModuleInit } from '@nestjs/common'
-import { PgPubSubService } from '@cisstech/nestjs-pg-pubsub'
+@RegisterPgTableChangeListener(User, {
+  events: ['INSERT', 'UPDATE'],     // only these events (default: all)
+  payloadFields: ['id', 'email'],   // only these columns in the payload (default: all)
+})
+```
 
+### Error Handling
+
+Use `onError` to mark specific messages as failed. They will be retried with exponential backoff.
+
+```typescript
+async process(changes: PgTableChanges<User>, onError?: PgTableChangeErrorHandler): Promise<void> {
+  for (const change of changes.all) {
+    try {
+      await this.doSomething(change)
+    } catch {
+      onError?.([change.id])  // this message will be retried
+    }
+  }
+}
+```
+
+If the entire `process()` method throws without calling `onError`, all messages in the batch are marked as failed.
+
+### Retry Metadata
+
+Each payload carries `_metadata` with `retry_count` (0 on first attempt) and `created_at`. This is useful when syncing to external systems: on retry, fetch fresh data from the DB instead of using the potentially stale payload:
+
+```typescript
+const retryCount = change._metadata?.retry_count ?? 0
+if (retryCount >= 1) {
+  const fresh = await this.userRepo.findOneBy({ id: change.data.id })
+  if (!fresh) return // deleted since, skip
+  await this.syncToExternalSystem(fresh)
+} else {
+  await this.syncToExternalSystem(change.data)
+}
+```
+
+## Multiple Listeners per Table
+
+Multiple listeners on the same table are supported. The library merges their event registrations into a single trigger:
+
+```typescript
+@RegisterPgTableChangeListener(User, { events: ['INSERT'] })
+export class UserCreationListener implements PgTableChangeListener<User> {
+  /* ... */
+}
+
+@RegisterPgTableChangeListener(User, { events: ['UPDATE'] })
+export class UserUpdateListener implements PgTableChangeListener<User> {
+  /* ... */
+}
+```
+
+## Custom NOTIFY Subscriptions
+
+You can also subscribe to arbitrary PostgreSQL `NOTIFY` channels (unrelated to table triggers):
+
+```typescript
 @Injectable()
 export class CustomEventService implements OnModuleInit {
   constructor(private readonly pgPubSubService: PgPubSubService) {}
 
   async onModuleInit(): Promise<void> {
-    await this.pgPubSubService.susbcribe<{ userId: string; action: string }>('custom-event', (payload) => {
-      console.log(`Custom event received for user ${payload.userId}: ${payload.action}`)
+    await this.pgPubSubService.susbcribe<{ action: string }>('my-channel', (payload) => {
+      console.log(payload.action)
     })
   }
 }
