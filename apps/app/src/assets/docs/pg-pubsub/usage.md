@@ -32,7 +32,7 @@ Decorate a class with `@RegisterPgTableChangeListener` and implement `PgTableCha
 @Injectable()
 @RegisterPgTableChangeListener(User)
 export class UserChangeListener implements PgTableChangeListener<User> {
-  async process(changes: PgTableChanges<User>, onError?: PgTableChangeErrorHandler): Promise<void> {
+  async process(changes: PgTableChanges<User>, ctx: PgTableChangeContext): Promise<void> {
     for (const insert of changes.INSERT) {
       console.log(`New user: ${insert.data.email}`)
     }
@@ -60,21 +60,21 @@ export class UserChangeListener implements PgTableChangeListener<User> {
 
 ### Error Handling
 
-Use `onError` to mark specific messages as failed. They will be retried with exponential backoff.
+Use `ctx.onError` to mark specific messages as failed. They will be retried with exponential backoff.
 
 ```typescript
-async process(changes: PgTableChanges<User>, onError?: PgTableChangeErrorHandler): Promise<void> {
+async process(changes: PgTableChanges<User>, ctx: PgTableChangeContext): Promise<void> {
   for (const change of changes.all) {
     try {
       await this.doSomething(change)
     } catch {
-      onError?.([change.id])  // this message will be retried
+      ctx.onError([change.id])  // this message will be retried
     }
   }
 }
 ```
 
-If the entire `process()` method throws without calling `onError`, all messages in the batch are marked as failed.
+If the entire `process()` method throws without calling `ctx.onError`, all messages in the batch are marked as failed.
 
 ### Retry Metadata
 
