@@ -71,6 +71,11 @@ export const PG_PUBSUB_DRAIN_INTERVAL = 50
 export const PG_PUBSUB_POOL_MAX = 5
 
 /**
+ * Default maximum number of concurrent listener executions.
+ */
+export const PG_PUBSUB_QUEUE_CONCURRENCY = 5
+
+/**
  * Type for a PostgreSQL table INSERT payload.
  */
 export type PgTableInsertPayload<TRow = unknown> = {
@@ -193,15 +198,42 @@ export type PgTableChanges<TRow = unknown> = {
 export type PgTableChangeErrorHandler = (ids: number[]) => void
 
 /**
+ * ORM-agnostic adapter for running listener logic inside a transaction.
+ * TToken is opaque to the library (e.g. EntityManager for TypeORM, PrismaClient for Prisma).
+ */
+export interface TransactionAdapter<TToken = unknown> {
+  /** Open a transaction, execute the callback, commit on success or rollback on error. */
+  run<T>(callback: (token: TToken) => Promise<T>): Promise<T>
+}
+
+/**
+ * Context passed to a listener's `process` method.
+ */
+export interface PgTableChangeContext<TToken = unknown> {
+  /** Callback to signal specific message IDs as failed (non-transactional mode). */
+  onError: PgTableChangeErrorHandler
+  /** Opaque transaction token. Present only when `transactional: true` and a transactionAdapter is configured. */
+  transaction?: TToken
+}
+
+/**
  * Type for a handler that listens to changes on a PostgreSQL table.
  */
-export interface PgTableChangeListener<TRow> {
+export interface PgTableChangeListener<TRow, TToken = unknown> {
   /**
    * Process the batch of changes received for a PostgreSQL table.
    * @param changes The batch of changes for the table.
-   * @param onError Callback to handle errors when processing a change. (used to mark the message as failed and retry later)
+   * @param ctx Context with error handling and optional transaction token.
    */
-  process(changes: PgTableChanges<TRow>, onError?: PgTableChangeErrorHandler): Promise<void>
+  process(changes: PgTableChanges<TRow>, ctx: PgTableChangeContext<TToken>): Promise<void>
+}
+
+/**
+ * A discovered listener with its resolved metadata.
+ */
+export interface ResolvedListener<TRow = unknown> {
+  instance: PgTableChangeListener<TRow>
+  transactional: boolean
 }
 
 /**
@@ -241,6 +273,13 @@ export type RegisterPgTableChangeListenerMetadata<T = any> = {
    * - If multiple listeners are registered for the same table, the values of this field will be merged.
    */
   payloadFields?: (keyof T)[]
+
+  /**
+   * Whether the listener should be invoked inside a transaction managed by the configured transactionAdapter.
+   * Requires a `transactionAdapter` in the module config. Validated at boot time.
+   * @default false
+   */
+  transactional?: boolean
 }
 
 /**
@@ -311,6 +350,12 @@ export type PgPubSubConfig = {
    * pg-pubsub operations are never blocked by TypeORM pool exhaustion.
    */
   pool?: PoolConfig
+
+  /**
+   * ORM-agnostic transaction adapter for listeners marked with `transactional: true`.
+   * The library calls `adapter.run()` to wrap listener execution in a transaction.
+   */
+  transactionAdapter?: TransactionAdapter
 
   /**
    * Custom lock service to use
@@ -397,6 +442,13 @@ export interface QueueConfig {
    * @default PG_PUBSUB_DRAIN_INTERVAL
    */
   drainInterval?: number
+
+  /**
+   * Maximum number of listener executions running in parallel.
+   * Limits the number of concurrent transactions / async operations.
+   * @default PG_PUBSUB_QUEUE_CONCURRENCY
+   */
+  concurrency?: number
 }
 
 /**
@@ -465,8 +517,8 @@ export interface ListenerDiscovery {
   /** Table listeners. */
   listeners: TableListener[]
 
-  /** Map of listeners by table name. */
-  listenersMap: Record<string, PgTableChangeListener<unknown>[]>
+  /** Map of resolved listeners by table name. */
+  listenersMap: Record<string, ResolvedListener<unknown>[]>
 
   /** List of entity metadata. */
   entityMetadataList: EntityMetadata[]

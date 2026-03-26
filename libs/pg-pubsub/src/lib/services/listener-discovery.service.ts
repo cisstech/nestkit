@@ -10,6 +10,7 @@ import {
   PgTableChangeListener,
   RegisterPgTableChangeListenerMeta,
   RegisterPgTableChangeListenerMetadata,
+  ResolvedListener,
   TableListener,
 } from '../pg-pubsub'
 
@@ -66,7 +67,7 @@ export class ListenerDiscoveryService {
 
     const tableNames = listeners.map((t) => t.table)
 
-    // Build listener map (table name -> array of listener instances)
+    // Build listener map (table name -> array of resolved listener instances)
     const listenersMap = providers.reduce(
       (acc, provider) => {
         const tableMeta = this.dataSource.getMetadata(provider.meta.target)
@@ -85,11 +86,14 @@ export class ListenerDiscoveryService {
 
         acc[tableName] = [
           ...(acc[tableName] || []),
-          provider.discoveredClass.instance as PgTableChangeListener<unknown>,
+          {
+            instance: provider.discoveredClass.instance as PgTableChangeListener<unknown>,
+            transactional: provider.meta.transactional ?? false,
+          },
         ]
         return acc
       },
-      {} as Record<string, PgTableChangeListener<unknown>[]>
+      {} as Record<string, ResolvedListener<unknown>[]>
     )
 
     return {

@@ -60,7 +60,7 @@ describe('QueueService', () => {
   })
 
   describe('startWorker', () => {
-    it('should recover orphans, run initial cleanup, and start periodic cleanup', async () => {
+    it('should recover orphans, run cleanup, and start periodic cleanup', async () => {
       const cleanupSpy = jest.spyOn(queueService as any, 'cleanupOldMessages').mockResolvedValue(undefined)
       const recoverSpy = jest.spyOn(queueService as any, 'recoverOrphanedMessages').mockResolvedValue(undefined)
       const startPeriodicCleanupSpy = jest.spyOn(queueService as any, 'startPeriodicCleanup')
@@ -128,38 +128,32 @@ describe('QueueService', () => {
   })
 
   describe('cleanupOldMessages', () => {
-    it('should delete processed messages older than TTL', async () => {
+    it('should delete terminal messages older than TTL', async () => {
       pgPool.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }])
 
       await (queueService as any).cleanupOldMessages()
 
-      expect(pgPool.query).toHaveBeenCalledWith(
-        expect.stringContaining(`DELETE FROM "${config.queue.schema}"."${config.queue.table}"`),
-        expect.any(Array)
-      )
-    })
-
-    it('should also delete stale processing messages older than TTL', async () => {
-      pgPool.query.mockResolvedValueOnce([{ id: 3 }])
-
-      await (queueService as any).cleanupOldMessages()
-
       const query = pgPool.query.mock.calls[0][0]
-      expect(query).toContain(`status = 'processing'`)
+      expect(query).toContain(`DELETE FROM "${config.queue.schema}"."${config.queue.table}"`)
+      expect(query).toContain(`status = 'processed' AND processed_at < $1`)
+      expect(query).toContain(`status = 'failed' AND retry_count >= $2 AND created_at < $1`)
+      expect(query).toContain(`status = 'processing' AND created_at < $1`)
+      expect(pgPool.query).toHaveBeenCalledWith(query, [expect.any(Date), config.queue.maxRetries])
     })
   })
 
   describe('recoverOrphanedMessages', () => {
-    it('should reset processing messages back to pending only when next_retry_at has passed', async () => {
+    it('should reset recent processing messages back to pending only when next_retry_at has passed', async () => {
       pgPool.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }, { id: 3 }])
 
       await queueService['recoverOrphanedMessages']()
 
-      expect(pgPool.query).toHaveBeenCalledWith(expect.stringContaining(`SET status = 'pending'`))
-      expect(pgPool.query).toHaveBeenCalledWith(expect.stringContaining(`WHERE status = 'processing'`))
-      expect(pgPool.query).toHaveBeenCalledWith(
-        expect.stringContaining(`next_retry_at IS NULL OR next_retry_at <= NOW()`)
-      )
+      const query = pgPool.query.mock.calls[0][0]
+      expect(query).toContain(`SET status = 'pending'`)
+      expect(query).toContain(`WHERE status = 'processing'`)
+      expect(query).toContain(`next_retry_at IS NULL OR next_retry_at <= NOW()`)
+      expect(query).toContain(`created_at >= $1`)
+      expect(pgPool.query).toHaveBeenCalledWith(query, [expect.any(Date)])
     })
 
     it('should do nothing when no orphaned messages exist', async () => {

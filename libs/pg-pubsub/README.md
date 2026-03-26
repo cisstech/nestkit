@@ -66,7 +66,7 @@ export class AppModule {}
 @Injectable()
 @RegisterPgTableChangeListener(User)
 export class UserChangeListener implements PgTableChangeListener<User> {
-  async process(changes: PgTableChanges<User>, onError?: PgTableChangeErrorHandler): Promise<void> {
+  async process(changes: PgTableChanges<User>, ctx: PgTableChangeContext): Promise<void> {
     for (const insert of changes.INSERT) {
       console.log(`New user: ${insert.data.email}`)
     }
@@ -91,8 +91,8 @@ That's it. The library auto-creates triggers, the queue table, and starts listen
 
 ### Important Constraints
 
-- **Do not open transactions inside listeners.** Listeners run inside the drain loop. A long transaction blocks the loop and can cause messages to exceed their processing timeout, leading to duplicate processing. If you must write to the DB, keep it fast and non-transactional, or use `onError` to defer.
 - **Listeners must be fast.** A slow listener delays the entire batch for that table. Offload heavy work to a queue (Bull, etc.) and just enqueue from the listener.
+- **Use `TransactionAdapter` for transactional writes.** If a listener needs to write to the DB inside a transaction, configure a `transactionAdapter` and mark the listener with `@RegisterPgTableChangeListener(Entity, { transactional: true })`. The library wraps the listener call in the adapter, passing an opaque transaction token via `ctx.transaction`. Without the adapter, use `ctx.onError` to signal failures.
 
 ## Configuration
 
@@ -105,6 +105,8 @@ Key tuning knobs:
 | `queue.batchSize`         | 100     | Max messages fetched per pull cycle                                   |
 | `queue.drainInterval`     | 50ms    | Pause between drain loop iterations (DB breathing room)               |
 | `queue.processingTimeout` | 5min    | After this, a `processing` message is considered orphaned and retried |
+| `queue.concurrency`       | 5       | Max listeners executing in parallel per batch                         |
+| `transactionAdapter`      | -       | ORM-agnostic adapter for wrapping listeners in transactions           |
 | `pool.max`                | 5       | Connections in the dedicated pg-pubsub pool                           |
 
 ## Documentation

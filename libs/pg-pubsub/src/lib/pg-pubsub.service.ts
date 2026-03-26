@@ -9,6 +9,7 @@ import {
   PG_PUBSUB_FALLBACK_POLLING_INTERVAL,
   PG_PUBSUB_LOCK_DURATION,
   PgPubSubConfig,
+  ResolvedListener,
 } from './pg-pubsub'
 import {
   ListenerDiscoveryService,
@@ -44,6 +45,8 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     this.discovery = await this.listenerDiscoveryService.discoverListeners()
+
+    this.validateTransactionalListeners()
 
     await this.pgLockService.tryLock({
       key: 'pg_pubsub',
@@ -198,6 +201,19 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
 
   private async setupListenersAndTriggers(): Promise<void> {
     await this.triggerService.setupTriggers(this.discovery)
+  }
+
+  private validateTransactionalListeners(): void {
+    const hasTransactional = Object.values(this.discovery.listenersMap)
+      .flat()
+      .some((l: ResolvedListener) => l.transactional)
+
+    if (hasTransactional && !this.config.transactionAdapter) {
+      throw new Error(
+        'pg-pubsub: transactional listeners detected but no transactionAdapter provided in config. ' +
+          'Either remove transactional: true from your listeners or provide a transactionAdapter in PgPubSubModule.forRoot().'
+      )
+    }
   }
 
   private async listenForChanges(): Promise<void> {

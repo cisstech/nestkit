@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import { interval, Subscription } from 'rxjs'
 import {
@@ -63,8 +62,10 @@ export class QueueService {
           ON "${this.queueSchema}"."${this.queueTable}"(next_retry_at);
       `)
       this.logger.log(`Queue table "${this.queueSchema}"."${this.queueTable}" created or already exists`)
-    } catch (error: any) {
-      this.logger.error(`Failed to create queue table: ${error.message}`, error.stack)
+    } catch (error) {
+      const stack = error instanceof Error ? error.stack : ''
+      const message = error instanceof Error ? error.message : String(error)
+      this.logger.error(`Failed to create queue table: ${message}`, stack)
       throw error
     }
   }
@@ -106,7 +107,9 @@ export class QueueService {
 
       return messages || []
     } catch (error) {
-      this.logger.error(`Failed to fetch pending messages:`, error)
+      const stack = error instanceof Error ? error.stack : ''
+      const message = error instanceof Error ? error.message : String(error)
+      this.logger.error(`Failed to fetch pending messages: ${message}`, stack)
       throw error
     }
   }
@@ -123,7 +126,9 @@ export class QueueService {
         [messageIds]
       )
     } catch (error) {
-      this.logger.error(`Failed to mark message ${JSON.stringify(messageIds)} as processed:`, error)
+      const stack = error instanceof Error ? error.stack : ''
+      const message = error instanceof Error ? error.message : String(error)
+      this.logger.error(`Failed to mark message ${JSON.stringify(messageIds)} as processed: ${message}`, stack)
       throw error
     }
   }
@@ -144,7 +149,9 @@ export class QueueService {
         [this.maxRetries, messageIds]
       )
     } catch (error) {
-      this.logger.error(`Failed to mark message ${JSON.stringify(messageIds)} as failed: `, error)
+      const stack = error instanceof Error ? error.stack : ''
+      const message = error instanceof Error ? error.message : String(error)
+      this.logger.error(`Failed to mark message ${JSON.stringify(messageIds)} as failed: ${message}`, stack)
       throw error
     }
   }
@@ -152,11 +159,19 @@ export class QueueService {
   private startPeriodicCleanup(): void {
     this.cleanupSubscription = interval(this.cleanupInterval).subscribe(() => {
       this.cleanupOldMessages().catch((err) => {
-        this.logger.error('Failed to clean up old messages', err)
+        const stack = err instanceof Error ? err.stack : ''
+        const message = err instanceof Error ? err.message : String(err)
+        this.logger.error(`Failed to clean up old messages: ${message}`, stack)
       })
     })
   }
 
+  /**
+   * Deletes terminal messages older than the configured TTL in batches of 1000:
+   * - PROCESSED with processed_at older than TTL
+   * - FAILED with exhausted retries and created_at older than TTL
+   * - PROCESSING with created_at older than TTL (non-recoverable zombies)
+   */
   private async cleanupOldMessages(): Promise<void> {
     const cutoffDate = new Date(Date.now() - this.messageTTL)
     let totalCleaned = 0
@@ -166,16 +181,16 @@ export class QueueService {
       do {
         deleted = await this.pgPool.query<{ id: number }>(
           `
-        DELETE FROM "${this.queueSchema}"."${this.queueTable}"
-        WHERE id IN (
-          SELECT id FROM "${this.queueSchema}"."${this.queueTable}"
-          WHERE (status = '${MessageStatus.PROCESSED}' AND processed_at < $1)
-            OR (created_at < $1 AND status = '${MessageStatus.FAILED}' AND retry_count >= $2)
-            OR (created_at < $1 AND status = '${MessageStatus.PROCESSING}')
-          LIMIT 1000
-        )
-        RETURNING id
-      `,
+            DELETE FROM "${this.queueSchema}"."${this.queueTable}"
+            WHERE id IN (
+              SELECT id FROM "${this.queueSchema}"."${this.queueTable}"
+              WHERE (status = '${MessageStatus.PROCESSED}' AND processed_at < $1)
+                OR (status = '${MessageStatus.FAILED}' AND retry_count >= $2 AND created_at < $1)
+                OR (status = '${MessageStatus.PROCESSING}' AND created_at < $1)
+              LIMIT 1000
+            )
+            RETURNING id
+          `,
           [cutoffDate, this.maxRetries]
         )
         totalCleaned += deleted?.length ?? 0
@@ -184,19 +199,27 @@ export class QueueService {
       if (totalCleaned > 0) {
         this.logger.log(`Cleaned up ${totalCleaned} old messages`)
       }
-    } catch (error: any) {
-      this.logger.error(`Failed to clean up old messages: ${error.message}`, error.stack)
+    } catch (error) {
+      const stack = error instanceof Error ? error.stack : ''
+      const message = error instanceof Error ? error.message : String(error)
+      this.logger.error(`Failed to clean up old messages: ${message}`, stack)
       throw error
     }
   }
 
   /**
    * Reset orphaned messages (stuck in 'processing' due to instance crash) back to 'pending'
-   * so they can be retried. Only recovers messages whose next_retry_at has passed,
-   * to avoid resetting messages actively being processed by another instance.
+   * so they can be retried.
+   *
+   * Guards:
+   * - next_retry_at: only recovers messages whose processing timeout has expired,
+   *   so messages actively being processed by another instance are never touched.
+   * - created_at: messages older than the TTL are not recoverable. They will be
+   *   deleted by cleanupOldMessages() instead.
    */
   private async recoverOrphanedMessages(): Promise<void> {
     try {
+      const cutoffDate = new Date(Date.now() - this.messageTTL)
       const result = await this.pgPool.query(
         `
         UPDATE "${this.queueSchema}"."${this.queueTable}"
@@ -204,15 +227,19 @@ export class QueueService {
             next_retry_at = NULL
         WHERE status = '${MessageStatus.PROCESSING}'
           AND (next_retry_at IS NULL OR next_retry_at <= NOW())
+          AND created_at >= $1
         RETURNING id
-      `
+      `,
+        [cutoffDate]
       )
 
       if (result?.length) {
         this.logger.log(`Recovered ${result.length} orphaned messages back to pending`)
       }
-    } catch (error: any) {
-      this.logger.error(`Failed to recover orphaned messages: ${error.message}`, error.stack)
+    } catch (error) {
+      const stack = error instanceof Error ? error.stack : ''
+      const message = error instanceof Error ? error.message : String(error)
+      this.logger.error(`Failed to recover orphaned messages: ${message}`, stack)
       throw error
     }
   }
