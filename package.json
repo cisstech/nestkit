@@ -75,7 +75,7 @@
     "@golevelup/nestjs-discovery": "^5.0.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",
-    "@nestjs/core": "^11.0.0",
+    "@nestjs/core": "^11.1.18",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/platform-socket.io": "^11.0.0",
     "@nestjs/swagger": "^11.0.0",
