@@ -1,10 +1,10 @@
 <!-- markdownlint-disable MD033 -->
 
-<h1 align="center"> Nest KIT</h1>
+<h1 align="center">NestKit</h1>
 
 <div align="center">
 
-A collection of libraries for NestJS developers.
+A collection of libraries for [NestJS](https://nestjs.com) developers.
 
 [![CI](https://github.com/cisstech/nestkit/actions/workflows/ci.yml/badge.svg)](https://github.com/cisstech/nestkit/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/cisstech/nestkit/branch/main/graph/badge.svg)](https://codecov.io/gh/cisstech/nestkit)
@@ -15,25 +15,35 @@ A collection of libraries for NestJS developers.
 
 </div>
 
+## Overview
+
+NestKit is a set of focused modules for NestJS APIs. Each package solves one problem well and
+installs on its own, so you add only what you need and nothing you do not.
+
 ## Packages
 
-| Package                                    | Description                                                  | Version                                                                                                                       |
-| ------------------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| [`@cisstech/nestjs-expand`](./libs/expand) | A NestJS module to build Dynamic Resource Expansion for APIs | [![version](https://img.shields.io/npm/v/@cisstech/nestjs-expand.svg)](https://www.npmjs.com/package/@cisstech/nestjs-expand) |
-| [`@cisstech/nestjs-pg-pubsub`](https://github.com/cisstech/nestkit/tree/main/libs/pg-pubsub) | Real-time PostgreSQL notifications using PubSub | [![npm version](https://badge.fury.io/js/@cisstech%2Fnestjs-pg-pubsub.svg)](https://www.npmjs.com/package/@cisstech/nestjs-pg-pubsub) | [Documentation](https://cisstech.github.io/nestkit/docs/nestjs-pg-pubsub/getting-started) |
+| Package | What it does | Version |
+| --- | --- | --- |
+| [`@cisstech/nestjs-expand`](https://cisstech.github.io/nestkit/docs/nestjs-expand/getting-started) | Dynamic resource expansion: let API clients pull related resources on demand, in a single request. | [![npm](https://img.shields.io/npm/v/@cisstech/nestjs-expand.svg)](https://www.npmjs.com/package/@cisstech/nestjs-expand) |
+| [`@cisstech/nestjs-pg-pubsub`](https://cisstech.github.io/nestkit/docs/nestjs-pg-pubsub/getting-started) | Real-time pub/sub over PostgreSQL `LISTEN`/`NOTIFY`, with no extra message broker to run. | [![npm](https://img.shields.io/npm/v/@cisstech/nestjs-pg-pubsub.svg)](https://www.npmjs.com/package/@cisstech/nestjs-pg-pubsub) |
 
-## 📄 Docs
+## Compatibility
 
-Documentation available at [https://cisstech.github.io/nestkit/](https://cisstech.github.io/nestkit/)
+Both modules support NestJS 10 and 11.
 
-## 📄 Articles
+## Documentation
 
-- [NestJS Expand](https://medium.com/@mciissee/supercharging-nestjs-apis-a-deep-dive-into-dynamic-resource-expansion-0e932cc7b4f2)
-- [NestJS PgPubSub](https://medium.com/@mciissee/building-real-time-applications-with-postgresql-and-nestjs-using-nestjs-pg-pubsub-db724187df3f)
+Guides and API for every module are hosted at
+[cisstech.github.io/nestkit](https://cisstech.github.io/nestkit/).
 
-## ⌨️ Development
+## Articles
 
-- Clone and install
+- [Supercharging NestJS APIs: a deep dive into Dynamic Resource Expansion](https://medium.com/@mciissee/supercharging-nestjs-apis-a-deep-dive-into-dynamic-resource-expansion-0e932cc7b4f2)
+- [Building real-time applications with PostgreSQL and NestJS](https://medium.com/@mciissee/building-real-time-applications-with-postgresql-and-nestjs-using-nestjs-pg-pubsub-db724187df3f)
+
+## Development
+
+Clone and install:
 
 ```bash
 git clone https://github.com/cisstech/nestkit
@@ -41,7 +51,7 @@ cd nestkit
 yarn
 ```
 
-- For optimal usage with the sample application, set up the following environment variables in a `.env` file in the root of the project:
+The sample application reads its configuration from a `.env` file at the repository root:
 
 ```env
 # PostgreSQL
@@ -52,49 +62,36 @@ POSTGRES_PASSWORD=postgres
 POSTGRES_DB=your_database
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/your_database
 
-# Redis (for distributed lock service)
+# Redis (for the distributed lock service)
 REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
 
-- Start docker
+Start the services and serve the demo:
 
 ```bash
 docker-compose up -d
-```
-
-- Serve demo
-
-```bash
 yarn start
 ```
 
-- Documentation app will be serve at <http://localhost:4200/>.
+- The documentation app is served at <http://localhost:4200/>.
+- The sample API documentation is served at <http://localhost:3000/api/doc>.
 
-- Samples APIs documentations will be serve at <http://localhost:3000/api/doc>.
+## Contribution
 
-## 🤝 Contribution
+Contributions are always welcome. Please read our
+[CONTRIBUTING.md](https://github.com/cisstech/nestkit/blob/main/CONTRIBUTING.md) first, then submit
+ideas as [pull requests](https://github.com/cisstech/nestkit/pulls) or
+[GitHub issues](https://github.com/cisstech/nestkit/issues). Make sure your code style matches the
+rest of the project and that the unit tests and linter pass.
 
-Contributions are always welcome. <br/>
+## Support development
 
-Please read our [CONTRIBUTING.md](https://github.com/cisstech/nestkit/blob/main/CONTRIBUTING.md) first. You can submit any ideas as [pull requests](https://github.com/cisstech/nestkit/pulls) or as [GitHub issues](https://github.com/cisstech/nestkit/issues).
+NestKit is free to use. As the maintainer, I put a lot of time into answering questions, fixing
+issues and adding features around a full-time job. If the project saved you or your team time, a
+star on the [repository](https://github.com/cisstech/nestkit) supports its maintenance and future
+work.
 
-Please just make sure that ...
-
-Your code style matches with the rest of the project
-
-Unit tests pass
-
-Linter passes
-
-## ❓ Support Development
-
-The use of this library is totally free.
-
-As the owner and primary maintainer of this project, I am putting a lot of time and effort beside my job, my family and my private time to bring the best support I can by answering questions, addressing issues and improving the library to provide more and more features over time.
-
-If this project has been useful, that it helped you or your business to save precious time, don't hesitate to give it a star to support its maintenance and future development.
-
-## ✨ License
+## License
 
 MIT © [Mamadou Cisse](https://github.com/cisstech)

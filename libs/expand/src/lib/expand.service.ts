@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-/* eslint-disable @typescript-eslint/ban-types */
+/* eslint-disable @typescript-eslint/no-unsafe-function-type, @typescript-eslint/no-empty-object-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DiscoveryService } from '@golevelup/nestjs-discovery'
 import { Inject, Injectable, Logger, OnModuleInit, Optional, Type } from '@nestjs/common'
