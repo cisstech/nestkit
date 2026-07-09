@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common'
 import { ChangeDetectionStrategy, Component } from '@angular/core'
 import { NgeMarkdownModule } from '@cisstech/nge/markdown'
 
@@ -6,7 +5,7 @@ import { NgeMarkdownModule } from '@cisstech/nge/markdown'
   selector: 'app-home',
   templateUrl: 'home.component.html',
   styleUrls: ['home.component.scss'],
-  imports: [CommonModule, NgeMarkdownModule],
+  imports: [NgeMarkdownModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent {
