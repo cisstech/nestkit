@@ -1,5 +1,5 @@
 import { NgeDocSettings } from '@cisstech/nge/doc'
-import { octicon } from './actions'
+import { editInGithubAction } from './actions'
 
 export const NestKitOverview: NgeDocSettings = {
   meta: {
@@ -15,8 +15,8 @@ export const NestKitOverview: NgeDocSettings = {
     {
       title: 'Introduction',
       href: 'introduction',
-      icon: octicon('home'),
       renderer: 'assets/docs/overview/introduction.md',
+      actions: [editInGithubAction('apps/app/src/assets/docs/overview/introduction.md')],
     },
   ],
 }

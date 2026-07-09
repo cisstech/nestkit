@@ -1,5 +1,5 @@
 import { NgeDocSettings } from '@cisstech/nge/doc'
-import { editInGithubAction, octicon } from './actions'
+import { editInGithubAction } from './actions'
 
 export const NestJsPgPubSubDoc: NgeDocSettings = {
   meta: {
@@ -16,35 +16,30 @@ export const NestJsPgPubSubDoc: NgeDocSettings = {
     {
       title: 'Getting Started',
       href: 'getting-started',
-      icon: octicon('rocket'),
       renderer: 'assets/docs/pg-pubsub/getting-started.md',
       actions: [editInGithubAction('apps/app/src/assets/docs/pg-pubsub/getting-started.md')],
     },
     {
       title: 'Installation',
       href: 'installation',
-      icon: octicon('package'),
       renderer: 'assets/docs/pg-pubsub/installation.md',
       actions: [editInGithubAction('apps/app/src/assets/docs/pg-pubsub/installation.md')],
     },
     {
       title: 'Usage',
       href: 'usage',
-      icon: octicon('code'),
       renderer: 'assets/docs/pg-pubsub/usage.md',
       actions: [editInGithubAction('apps/app/src/assets/docs/pg-pubsub/usage.md')],
     },
     {
       title: 'Advanced Usage',
       href: 'advanced-usage',
-      icon: octicon('tools'),
       renderer: 'assets/docs/pg-pubsub/advanced-usage.md',
       actions: [editInGithubAction('apps/app/src/assets/docs/pg-pubsub/advanced-usage.md')],
     },
     {
       title: 'Sample Application',
       href: 'sample-application',
-      icon: octicon('beaker'),
       renderer: 'assets/docs/pg-pubsub/sample-application.md',
       actions: [editInGithubAction('apps/app/src/assets/docs/pg-pubsub/sample-application.md')],
     },
