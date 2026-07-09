@@ -1,5 +1,5 @@
 /* eslint-disable */
-export default {
+module.exports = {
   displayName: 'pg-pubsub',
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
@@ -9,5 +9,5 @@ export default {
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/libs/pg-pubsub',
   testPathIgnorePatterns: ['integration', 'stress'],
-  detectOpenHandles: true
+  detectOpenHandles: true,
 }

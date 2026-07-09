@@ -21,7 +21,7 @@
     },
     "@nx/eslint:lint": {
       "cache": true,
-      "inputs": ["default", "{workspaceRoot}/.eslintrc.json", "{workspaceRoot}/tools/eslint-rules/**/*"]
+      "inputs": ["default", "^default", "{workspaceRoot}/.eslintrc.json", "{workspaceRoot}/tools/eslint-rules/**/*"]
     }
   },
   "namedInputs": {
