@@ -1,7 +1,6 @@
-@import './styles//normalize.scss';
-@import './styles/fonts';
-@import './styles/variables';
-@import './styles/material/light.scss';
+@use './styles//normalize.scss';
+@use './styles/fonts';
+@use './styles/variables';
 
 html {
   width: 100vw;

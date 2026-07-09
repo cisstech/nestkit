@@ -63,14 +63,9 @@ export const appConfig: ApplicationConfig = {
     provideNgeDoc(
       withBrand({ title: 'NestKit', icon: 'assets/icons/nestjs.svg', href: '/' }),
       withNavbar([
-        { title: '@nestjs-expand', href: '/docs/nestjs-expand/', icon: 'assets/icons/nestjs.svg' },
-        { title: '@nestjs-pg-pubsub', href: '/docs/nestjs-pg-pubsub/', icon: 'assets/icons/nestjs.svg' },
-        {
-          title: 'GitHub',
-          href: 'https://github.com/cisstech/nestkit',
-          icon: 'https://icongr.am/octicons/mark-github.svg',
-          external: true,
-        },
+        { title: 'Overview', href: '/docs/overview/' },
+        { title: '@nestjs-expand', href: '/docs/nestjs-expand/' },
+        { title: '@nestjs-pg-pubsub', href: '/docs/nestjs-pg-pubsub/' },
       ]),
       withMarkdownRenderer({
         component: () => import('@cisstech/nge/markdown').then((m) => m.NgeMarkdownComponent),
