@@ -71,7 +71,7 @@
     "@angular/platform-browser": "22.0.6",
     "@angular/platform-browser-dynamic": "22.0.6",
     "@angular/router": "22.0.6",
-    "@cisstech/nge": "^18.0.4",
+    "@cisstech/nge": "^22.0.0",
     "@golevelup/nestjs-discovery": "^5.0.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",

@@ -2712,10 +2712,10 @@
   resolved "https://registry.yarnpkg.com/@bufbuild/protobuf/-/protobuf-2.12.1.tgz#89b0a4ad6412ba55a971e107a46b6c6326ff1b8a"
   integrity sha512-BvAMfS6LrgZiryOAZ4pBYucu4wG/Ei/9o9DZ9akbREnMLbPJiom2i8b9C8IsKErQoiKqVhrerzt3kOT/RrzLHg==
 
-"@cisstech/nge@^18.0.4":
-  version "18.0.4"
-  resolved "https://registry.yarnpkg.com/@cisstech/nge/-/nge-18.0.4.tgz#dedd49c3322f002913fa144422892f98b562f96a"
-  integrity sha512-6sDMWiQVYLrMkgpPOoIcvHAJvBYRwsulPH9RERx2oWaoCxi8tMQGbaS2Zcce8rI1W5Lz8cWgoEK2ivT9sOrIAw==
+"@cisstech/nge@^22.0.0":
+  version "22.0.1"
+  resolved "https://registry.yarnpkg.com/@cisstech/nge/-/nge-22.0.1.tgz#b16fbc9cbdde99206c0b21456e134f0636924636"
+  integrity sha512-L0JOnoAlIwovFrDSbxA8XF6deqG896gPLZno0JqIUjRWdFaMlvFAq+grKB3lXgPJKR/TN3GJ0+Xh3y0boPjEBQ==
   dependencies:
     tslib "^2.3.0"
 
