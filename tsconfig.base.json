@@ -27,7 +27,11 @@
       "@cisstech/nestjs-expand": ["libs/expand/src/index.ts"],
       "@cisstech/nestjs-pg-pubsub": ["libs/pg-pubsub/src/index.ts"],
       "@cisstech/testing": ["testing/index.ts"]
-    }
+    },
+    "noUncheckedSideEffectImports": false,
+    "types": ["*"],
+    "esModuleInterop": false,
+    "ignoreDeprecations": "6.0"
   },
   "exclude": ["node_modules", "tmp"]
 }

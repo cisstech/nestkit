@@ -3,7 +3,7 @@ import { provideAnimations } from '@angular/platform-browser/animations'
 import { PreloadAllModules, provideRouter, withEnabledBlockingInitialNavigation, withPreloading } from '@angular/router'
 import { appRoutes } from './app.routes'
 
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
+import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http'
 import { NGE_DOC_RENDERERS } from '@cisstech/nge/doc'
 import {
   NgeMarkdownAdmonitionsProvider,
@@ -22,7 +22,7 @@ import { NGE_MONACO_THEMES, NgeMonacoColorizerService, NgeMonacoModule } from '@
 export const appConfig: ApplicationConfig = {
   providers: [
     provideAnimations(),
-    provideHttpClient(withInterceptorsFromDi()),
+    provideHttpClient(withXhr(), withInterceptorsFromDi()),
     importProvidersFrom(
       NgeMarkdownModule,
       NgeMonacoModule.forRoot({
