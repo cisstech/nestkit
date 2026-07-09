@@ -38,7 +38,7 @@ export default [
         'error',
         {
           enforceBuildableLibDependency: true,
-          allow: [],
+          allow: ['@cisstech/testing'],
           depConstraints: [
             {
               sourceTag: '*',
