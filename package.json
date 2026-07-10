@@ -187,5 +187,5 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
   },
-  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
+  "packageManager": "yarn@4.12.0+sha256.1fe4e1193cbcd13a48d8f436bb17d3c672b049a5e32a758aab9866a073db1702"
 }
