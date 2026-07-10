@@ -141,6 +141,7 @@
     "eslint": "9.9.1",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "^5.0.1",
+    "glob": "^11",
     "husky": "^8.0.3",
     "jest": "30.4.2",
     "jest-environment-jsdom": "30.4.1",
