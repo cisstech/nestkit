@@ -8,7 +8,7 @@ The result: you get real-time reactivity (via `LISTEN/NOTIFY`) with guaranteed d
 
 ## Architecture
 
-```
+```text
 ┌──────────────┐     trigger      ┌──────────────────┐    NOTIFY    ┌──────────────────┐
 │  Your Table  │ ──────────────►  │  pg_pubsub_queue │ ──────────►  │  PgPubSubService │
 │  (INSERT/    │                  │  (persistent)    │              │  (pull + drain)  │

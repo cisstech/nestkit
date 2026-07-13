@@ -59,3 +59,11 @@ Thumbs.db
 .nx/polygraph
 .nx/self-healing
 .nx/migrate-runs
+# nge-doc generated outputs (ng run app:docs); sources under apps/app/public/docs are committed
+/apps/app/public/docs/nge-doc.json
+/apps/app/public/docs/search.json
+/apps/app/public/docs/api/
+/apps/app/public/sitemap.xml
+/apps/app/public/robots.txt
+/apps/app/public/llms.txt
+/apps/app/public/llms-full.txt

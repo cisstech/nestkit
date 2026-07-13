@@ -15,7 +15,7 @@ The repository includes a working sample at `apps/app/src/app/samples/pubsub/` t
 docker-compose up -d
 ```
 
-2. Create a `.env` file:
+1. Create a `.env` file:
 
 ```env
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/your_database
@@ -23,13 +23,13 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
 
-3. Start the API:
+1. Start the API:
 
 ```bash
 yarn nx run api:serve
 ```
 
-4. The API is available at `http://localhost:3000/api/v1`
+1. The API is available at `http://localhost:3000/api/v1`
 
 ## Testing
 
