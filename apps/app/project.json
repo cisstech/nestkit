@@ -114,7 +114,7 @@
         "commands": [
           "nx build app --configuration production",
           "bash scripts/stage-ghpages.sh dist/apps/app/browser",
-          "angular-cli-ghpages --dir=dist/apps/app/browser --repo=https://github.com/cisstech/nestkit.git"
+          "npx angular-cli-ghpages --dir=dist/apps/app/browser --repo=https://github.com/cisstech/nestkit.git"
         ]
       }
     },
