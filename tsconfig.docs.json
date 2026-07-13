@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["libs/expand/src/**/*.ts", "libs/pg-pubsub/src/**/*.ts"],
+  "exclude": ["**/*.spec.ts", "**/*.integration.spec.ts", "**/*.stress.spec.ts", "**/*.test.ts"]
+}

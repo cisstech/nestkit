@@ -22,17 +22,19 @@
           "apps/app/src/assets",
           {
             "glob": "**/*",
-            "input": "./node_modules/@cisstech/nge/assets/monaco",
-            "output": "./assets/vendors/nge/monaco/"
+            "input": "./node_modules/@cisstech/nge/assets/markdown/",
+            "output": "./assets/vendors/nge/markdown/"
           },
           {
             "glob": "**/*",
-            "input": "./node_modules/@cisstech/nge/assets/markdown/",
-            "output": "./assets/vendors/nge/markdown/"
+            "input": "apps/app/public",
+            "output": "."
           }
         ],
         "styles": ["apps/app/src/styles.scss"],
-        "scripts": []
+        "scripts": [],
+        "server": "apps/app/src/main.server.ts",
+        "outputMode": "static"
       },
       "configurations": {
         "production": {
@@ -48,14 +50,16 @@
               "maximumError": "4kb"
             }
           ],
-          "outputHashing": "all"
+          "outputHashing": "all",
+          "baseHref": "/nestkit/"
         },
         "development": {
           "optimization": false,
           "extractLicenses": false,
           "sourceMap": true
         }
-      }
+      },
+      "dependsOn": ["docs"]
     },
     "serve": {
       "executor": "@angular-devkit/build-angular:dev-server",
@@ -91,12 +95,28 @@
       }
     },
     "deploy": {
-      "executor": "angular-cli-ghpages:deploy",
+      "executor": "nx:run-commands",
       "options": {
-        "dir": "./dist/apps/app/browser",
-        "repo": "https://github.com/cisstech/nestkit.git",
-        "buildTarget": "app:build:production",
-        "baseHref": "https://cisstech.github.io/nestkit/"
+        "parallel": false,
+        "commands": [
+          "nx build app --configuration production",
+          "bash scripts/stage-ghpages.sh dist/apps/app/browser",
+          "angular-cli-ghpages --no-build --dir=dist/apps/app/browser --repo=https://github.com/cisstech/nestkit.git"
+        ]
+      }
+    },
+    "docs": {
+      "executor": "@cisstech/nge:docs",
+      "options": {
+        "publicDir": "apps/app/public",
+        "root": "/docs",
+        "name": "NestKit",
+        "nav": "tabs",
+        "siteUrl": "https://cisstech.github.io/nestkit",
+        "api": {
+          "entryPoints": ["libs/expand/src/index.ts", "libs/pg-pubsub/src/index.ts"],
+          "tsconfig": "tsconfig.docs.json"
+        }
       }
     }
   }

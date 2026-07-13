@@ -1,14 +1,12 @@
 import { Route } from '@angular/router'
-import { NestJsExpandDoc } from './docs/nestjs-expand'
-import { NestJsPgPubSubDoc } from './docs/nestjs-pg-pubsub'
-import { NestKitOverview } from './docs/overview'
+import { docsFromManifest } from '@cisstech/nge/doc'
 
 export const appRoutes: Route[] = [
-  { path: '', redirectTo: 'docs/overview', pathMatch: 'full' },
+  { path: '', redirectTo: 'docs/overview/introduction', pathMatch: 'full' },
   {
     path: 'docs',
-    loadChildren: () => import('@cisstech/nge/doc').then((m) => m.NgeDocModule),
-    data: [NestKitOverview, NestJsExpandDoc, NestJsPgPubSubDoc],
+    loadChildren: () => import('@cisstech/nge/doc').then((m) => m.NGE_DOC_ROUTES),
+    data: docsFromManifest('docs/nge-doc.json'),
   },
-  { path: '**', redirectTo: 'docs/overview' },
+  { path: '**', redirectTo: 'docs/overview/introduction' },
 ]

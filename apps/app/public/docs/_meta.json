@@ -1,0 +1,14 @@
+{
+  "overview": {
+    "title": "Overview"
+  },
+  "nestjs-expand": {
+    "title": "@nestjs-expand"
+  },
+  "nestjs-pg-pubsub": {
+    "title": "@nestjs-pg-pubsub"
+  },
+  "api": {
+    "title": "API"
+  }
+}
