@@ -14,10 +14,10 @@ import {
   withIcons,
   withKatex,
   withLinkAnchor,
-  withShiki,
   withTabbedSet,
   withThemes,
 } from '@cisstech/nge/markdown'
+import { withShiki } from '@cisstech/nge/markdown/shiki'
 
 export function markdownOptions(): NgeMarkdownConfig {
   return {
