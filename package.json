@@ -37,7 +37,7 @@
     "build:api": "nx run api:build --prod",
     "build:app": "nx run app:build --prod",
     "build:libs": "nx run-many --target=build --exclude=api,app --configuration=production",
-    "publish:app": "nx run app:deploy --no-silent",
+    "publish:app": "nx run app:deploy",
     "test": "nx run-many --target=test --parallel=false --runInBand --detectOpenHandles --all --coverage=true --coverageReporters=lcov --watch=false --browsers=ChromeHeadless && node coverage-merger.js",
     "lint": "nx report && nx run-many --target=lint --all",
     "lint:fix": "nx report && nx run-many --target=lint --all --fix",
