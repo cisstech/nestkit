@@ -121,7 +121,7 @@ export class CourseController {
 
 To avoid duplicating expansion logic (e.g., fetching a related entity like a user or instructor) across multiple `@Expander` classes, you can define reusable logic using `@ExpanderMethods` and `@UseExpansionMethod`.
 
-1.  **Create a Class with `@ExpanderMethods`**: This class holds the reusable logic.
+1. **Create a Class with `@ExpanderMethods`**: This class holds the reusable logic.
 
     ```typescript
     // user.expander-methods.ts
@@ -143,7 +143,7 @@ To avoid duplicating expansion logic (e.g., fetching a related entity like a use
     }
     ```
 
-2.  **Link Logic using `@UseExpansionMethod`**: Apply this decorator to your standard `@Expander` class.
+2. **Link Logic using `@UseExpansionMethod`**: Apply this decorator to your standard `@Expander` class.
 
     ```typescript
     // post.expander.ts
@@ -168,7 +168,7 @@ To avoid duplicating expansion logic (e.g., fetching a related entity like a use
     }
     ```
 
-3.  **Register Providers**: Ensure both `PostExpander` and `UserExpanderMethods` are registered in your module.
+3. **Register Providers**: Ensure both `PostExpander` and `UserExpanderMethods` are registered in your module.
 
 ## Error Handling
 
