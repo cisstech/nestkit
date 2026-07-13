@@ -1,0 +1,1243 @@
+[
+  {
+    "slug": "/docs/overview/introduction",
+    "title": "Introduction",
+    "content": "NestKit is a small set of focused modules for NestJS APIs. Each one solves a single problem well and installs on its own, so you add only what you need."
+  },
+  {
+    "slug": "/docs/overview/introduction#packages",
+    "title": "Introduction",
+    "heading": "Packages",
+    "content": "Package What it gives you --- --- @cisstech/nestjs-expand Dynamic resource expansion: let clients pull related resources on demand, in a single request. @cisstech/nestjs-pg-pubsub Real-time pub/sub over PostgreSQL LISTEN/NOTIFY, with no extra message broker to run."
+  },
+  {
+    "slug": "/docs/overview/introduction#why-it-exists",
+    "title": "Introduction",
+    "heading": "Why it exists",
+    "content": "Common API needs, like expanding related resources or broadcasting changes, usually pull in heavy infrastructure or a pile of boilerplate. Each NestKit module keeps the surface small: a NestJS module you import, sensible defaults, and nothing extra to run that you do not need."
+  },
+  {
+    "slug": "/docs/overview/introduction#where-to-go-next",
+    "title": "Introduction",
+    "heading": "Where to go next",
+    "content": "Expanding related resources? Start with nestjs-expand. Real-time notifications? See nestjs-pg-pubsub. Source, issues and releases live on GitHub."
+  },
+  {
+    "slug": "/docs/nestjs-expand/getting-started",
+    "title": "Getting Started",
+    "content": "<div align=\"center\"> A NestJS module to build Dynamic Resource Expansion for APIs </div>"
+  },
+  {
+    "slug": "/docs/nestjs-expand/getting-started#overview",
+    "title": "Getting Started",
+    "heading": "Overview",
+    "content": "The NestJS Expandable Library is a powerful and flexible extension for NestJS applications, providing a generic pattern for resource expansion in REST APIs. It allows you to dynamically expand and include related resources in API responses, enhancing the flexibility of your API design."
+  },
+  {
+    "slug": "/docs/nestjs-expand/getting-started#features",
+    "title": "Getting Started",
+    "heading": "Features",
+    "content": "Dynamic Resource Expansion: Easily expand related resources in API responses using query parameters. Dynamic Field Selection: Easily select only the fields you want to get from the API responses using query parameters. Decorator-Based Configuration: Use decorators to mark classes and methods as expanders and expandable, simplifying configuration. Enhanced Metadata Handling: Improved handling of metadata allows for multiple decorators of the same type on the same target. Configuration and Customization: Configure and customize the library to suit your application's specific needs. Comprehensive Error Handling: Configure how expansion errors are handled with multiple policies and customizable error responses. Tested and Reliable: Extensive unit and integration tests ensure the reliability of the library."
+  },
+  {
+    "slug": "/docs/nestjs-expand/getting-started#use-cases",
+    "title": "Getting Started",
+    "heading": "Use cases",
+    "content": "For a detailed explanation of use cases, please refer to this Medium article."
+  },
+  {
+    "slug": "/docs/nestjs-expand/getting-started#installation",
+    "title": "Getting Started",
+    "heading": "Installation",
+    "content": ""
+  },
+  {
+    "slug": "/docs/nestjs-expand/getting-started#license",
+    "title": "Getting Started",
+    "heading": "License",
+    "content": "MIT © Mamadou Cisse"
+  },
+  {
+    "slug": "/docs/nestjs-expand/installation",
+    "title": "Installation",
+    "content": "yarn add @cisstech/nestjs-expand or using npm npm install @cisstech/nestjs-expand"
+  },
+  {
+    "slug": "/docs/nestjs-expand/usage#define-dtos",
+    "title": "Usage",
+    "heading": "Define DTOs",
+    "content": "// course.dto.ts export class CourseDTO { id: number title: string description: string instructorId: number } // instructor.dto.ts export class InstructorDTO { id: number name: string bio: string }"
+  },
+  {
+    "slug": "/docs/nestjs-expand/usage#define-controller",
+    "title": "Usage",
+    "heading": "Define Controller",
+    "content": "The expandable endpoints are marked with the @Expandable decorator // course.controller.ts import { Controller, Get } from '@nestjs/common' import { CourseService } from './course.service' import { CourseDTO } from './course.dto' import { Expandable } from '@cisstech/nestjs-expand' @Controller('courses') export class CourseController { constructor(private readonly courseService: CourseService) {} @Get() @Expandable(CourseDTO) async getAllCourses(): Promise<CourseDTO[]> { return this.courseService.getAllCourses() } }"
+  },
+  {
+    "slug": "/docs/nestjs-expand/usage#define-expanders-expander",
+    "title": "Usage",
+    "heading": "Define Expanders (`@Expander`)",
+    "content": "An expander is a simple NestJS service decorated with @Expander decorator. It contains methods specific to expanding fields for a particular DTO. // course.expander.ts import { Injectable } from '@nestjs/common' import { ExpandContext, Expander, Expandable } from '@cisstech/nestjs-expand' // Corrected import path import { CourseDTO } from './course.dto' import { InstructorDTO } from '../instructors/instructor.dto' // Corrected path import { InstructorService } from '../instructors/instructor.service' // Corrected path @Injectable() @Expander(CourseDTO) export class CourseExpander { constructor(private readonly instructorService: InstructorService) {} // This method might be replaced by @UseExpansionMethod if logic is reusable async instructor(context: ExpandContext<Request, CourseDTO>): Promise<InstructorDTO> { const { parent } = context const instructor = await this.instructorService.getInstructorById(parent.instructorId) if (!instructor) { throw new Error(Instructor with id ${parent.instructorId} not found) } return instructor } } You can define as many expanders as needed for the same DTO."
+  },
+  {
+    "slug": "/docs/nestjs-expand/usage#define-reusable-expansion-logic-expandermethods",
+    "title": "Usage",
+    "heading": "Define Reusable Expansion Logic (`@ExpanderMethods`)",
+    "content": "For common expansion logic (like fetching a user), create a separate injectable class decorated with @ExpanderMethods. // instructor.expander-methods.ts (Example) import { Injectable } from '@nestjs/common' import { ExpanderMethods } from '@cisstech/nestjs-expand' import { InstructorService } from './instructor.service' import { InstructorDTO } from './instructor.dto' @Injectable() @ExpanderMethods() // Mark class containing reusable methods export class InstructorExpanderMethods { constructor(private readonly instructorService: InstructorService) {} // Method to be reused async fetchById(id: number): Promise<InstructorDTO null> { // Add robust error handling as needed return this.instructorService.getInstructorById(id) } }"
+  },
+  {
+    "slug": "/docs/nestjs-expand/usage#link-reusable-logic-useexpansionmethod",
+    "title": "Usage",
+    "heading": "Link Reusable Logic (`@UseExpansionMethod`)",
+    "content": "In your standard @Expander class, use the @UseExpansionMethod decorator at the class level to link a field to a method in your @ExpanderMethods class. // course.expander.ts (Updated) import { Injectable } from '@nestjs/common' import { Expander, UseExpansionMethod } from '@cisstech/nestjs-expand' import { CourseDTO } from './course.dto' import { InstructorExpanderMethods } from '../instructors/instructor.expander-methods' @Injectable() @Expander(CourseDTO) @UseExpansionMethod<CourseDTO, InstructorExpanderMethods>({ name: 'instructor', // Field to populate in CourseDTO class: InstructorExpanderMethods, // The class containing the reusable logic method: 'fetchById', // The method to call in InstructorExpanderMethods params: ['instructorId'], // Map CourseDTO.instructorId to the first argument of fetchById // For complex cases: params: (context) => [context.parent.instructorId, context.request.headers['x-tenant']] }) export class CourseExpander { // No need for the 'instructor' method here anymore! // Constructor can be empty if no other dependencies or standard methods are needed. constructor() {} }"
+  },
+  {
+    "slug": "/docs/nestjs-expand/usage#define-services",
+    "title": "Usage",
+    "heading": "Define Services",
+    "content": "// course.service.ts import { Injectable } from '@nestjs/common' import { CourseDTO } from './course.dto' @Injectable() export class CourseService { private readonly courses: CourseDTO[] = [ { id: 1, title: 'Introduction to Programming', description: 'Learn the basics of programming.', instructorId: 101 }, { id: 2, title: 'Web Development Fundamentals', description: 'Explore the world of web development.', instructorId: 102, }, // ... more courses ] getAllCourses(): Promise<CourseDTO[]> { return Promise.resolve(this.courses) } } // instructor.service.ts import { Injectable } from '@nestjs/common' import { InstructorDTO } from './instructor.dto' @Injectable() export class InstructorService { private readonly instructors: InstructorDTO[] = [ { id: 101, name: 'John Doe', bio: 'Passionate about teaching programming concepts.' }, { id: 102, name: 'Jane Smith', bio: 'Experienced web developer and instructor.' }, // ... more instructors ] getInstructorById(instructorId: number): Promise<InstructorDTO undefined> { return Promise.resolve(this.instructors.find((i) => i.id === instructorId)) } }"
+  },
+  {
+    "slug": "/docs/nestjs-expand/usage#import-nestkitexpandmodule-and-register-providers",
+    "title": "Usage",
+    "heading": "Import NestKitExpandModule and Register Providers",
+    "content": "Ensure all @Expander and @ExpanderMethods classes are registered as providers in your module. // app.module.ts import { Module } from '@nestjs/common' import { NestKitExpandModule } from '@cisstech/nestjs-expand' import { CourseController } from 'PATHTOFILE' import { CourseService } from 'PATHTOFILE' import { InstructorService } from 'PATHTOFILE' import { CourseExpander } from 'PATHTOFILE' import { InstructorExpanderMethods } from 'PATHTOFILE' // Register the reusable methods class @Module({ imports: [ NestKitExpandModule.forRoot({ enableLogging: true, enableGlobalSelection: true, expandQueryParamName: 'expands', selectQueryParamName: 'selects', }), ], controllers: [CourseController], providers: [ CourseService, InstructorService, CourseExpander, // Register standard expander InstructorExpanderMethods, // Register class with reusable methods ], }) export class AppModule {} Sample API Call Result: Endpoint: GET /courses Output: { \"courses\": [ { \"id\": 1, \"title\": \"Introduction to Programming\", \"description\": \"Learn the basics of programming.\", \"instructorId\": 101 }, { \"id\": 2, \"title\": \"Web Development Fundamentals\", \"description\": \"Explore the world of web development.\", \"instructorId\": 102 } // ... more courses ] } Endpoint: GET /courses?expands=instructor Output: { \"courses\": [ { \"id\": 1, \"title\": \"Introduction to Programming\", \"description\": \"Learn the basics of programming.\", \"instructorId\": 101, \"instructor\": { \"id\": 101, \"name\": \"John Doe\", \"bio\": \"Passionate about teaching programming concepts.\" } }, { \"id\": 2, \"title\": \"Web Development Fundamentals\", \"description\": \"Explore the world of web development.\", \"instructorId\": 102, \"instructor\": { \"id\": 102, \"name\": \"Jane Smith\", \"bio\": \"Experienced web developer and instructor.\" } } // ... more courses ] }"
+  },
+  {
+    "slug": "/docs/nestjs-expand/usage#crucial-performance-note-dataloader-for-list-endpoints",
+    "title": "Usage",
+    "heading": "Crucial performance note: DataLoader for list endpoints",
+    "content": "When expanding fields on list endpoints (like fetching the instructor for every course in GET /courses?expands=instructor), calling the database individually for each item inside the expander method creates the N+1 query problem. To solve this efficiently, use the DataLoader pattern within your expander method or use cache technique. DataLoader batches multiple individual requests (like fetching instructors by ID) into a single, optimized query, dramatically improving performance for list expansions."
+  },
+  {
+    "slug": "/docs/nestjs-expand/advanced-usage#module-configuration-options",
+    "title": "Advanced Usage",
+    "heading": "Module Configuration Options",
+    "content": "The library provides configuration options to customize its behavior. You can pass an optional configuration object when initializing the NestKitExpandModule in your module. The config object is fully documented. // app.module.ts import { Module } from '@nestjs/common' import { NestKitExpandModule } from '@cisstech/nestjs-expand' import { UserExpander } from 'FILEPATH' import { UserController } from 'FILEPATH' @Module({ imports: [ NestKitExpandModule.forRoot({ enableLogging: true, enableGlobalSelection: true, expandQueryParamName: 'expands', selectQueryParamName: 'selects', logLevel: 'warn', // 'debug', 'log', 'warn', 'error', or 'none' errorHandling: { includeErrorsInResponse: true, defaultErrorPolicy: 'ignore', errorResponseShape: (error, path) => ({ message: error.message, path: path, }), }, }), ], controllers: [UserController], providers: [UserExpander], }) export class AppModule {}"
+  },
+  {
+    "slug": "/docs/nestjs-expand/advanced-usage#controller-configuration-options",
+    "title": "Advanced Usage",
+    "heading": "Controller Configuration Options",
+    "content": "In some situations, it's useful to override the global configurations on the controller layer: expandQueryParamName: If some endpoints already use your global expandQueryParamName query param, you can override it as follows: // course.controller.ts import { Controller, Get } from '@nestjs/common' import { CourseService } from './course.service' import { CourseDTO } from './course.dto' import { Expandable } from '@cisstech/nestjs-expand' @Controller('courses') export class CourseController { constructor(private readonly courseService: CourseService) {} @Get() @Expandable(CourseDTO, { queryParamName: 'myCustomQueryParam', }) async getAllCourses(): Promise<CourseDTO[]> { return this.courseService.getAllCourses() } } selectQueryParamName: The same option as for expandQueryParamName to override the global selectQueryParamName query param. // course.controller.ts import { Controller, Get } from '@nestjs.commo/' import { CourseService } from './course.service' import { CourseDTO } from './course.dto' import { Expandable } from '@cisstech/nestjs-expand' @Controller('courses') export class CourseController { constructor(private readonly courseService: CourseService) {} @Get() @Selectable({ queryParamName: 'myCustomQueryParam', }) async getAllCourses(): Promise<CourseDTO[]> { return this.courseService.getAllCourses() } } rootField: In some situations, you may wrap your response with an object containing other information like total, nextPage and put the DTO inside a field like items. To address such situations, you can use the rootField property on both @Selectable and @Expandable decorators. // course.controller.ts import { Controller, Get } from '@nestjs/common' import { CourseService } from './course.service' import { CourseDTO } from './course.dto' import { Expandable, Selectable } from '@cisstech/nestjs-expand' @Controller('courses') export class CourseController { constructor(private readonly courseService: CourseService) {} @Get() @Expandable(CourseDTO, { rootField: 'items', }) @Selectable({ rootField: 'items' }) async getAllCourses(): Promise<{ items: CourseDTO[]; total: number }> { const [courses, total] = await this.courseService.getAllCourses() return { total, items: courses, } } }"
+  },
+  {
+    "slug": "/docs/nestjs-expand/advanced-usage#reusable-expansion-logic",
+    "title": "Advanced Usage",
+    "heading": "Reusable Expansion Logic",
+    "content": "To avoid duplicating expansion logic (e.g., fetching a related entity like a user or instructor) across multiple @Expander classes, you can define reusable logic using @ExpanderMethods and @UseExpansionMethod. 1. Create a Class with @ExpanderMethods: This class holds the reusable logic. // user.expander-methods.ts import { Injectable } from '@nestjs.commo/' import { ExpanderMethods } from '@cisstech/nestjs-expand' import { UserService } from './user.service' import { UserDTO } from './user.dto' @Injectable() @ExpanderMethods() export class UserExpanderMethods { constructor(private readonly userService: UserService) {} // You can use @Expandable decorator here is UserDTO is also expandable async fetchUserById(userId: number): Promise<UserDTO null> { // Implement user fetching logic return this.userService.findById(userId) } } 2. Link Logic using @UseExpansionMethod: Apply this decorator to your standard @Expander class. // post.expander.ts import { Injectable } from '@nestjs.commo/' import { Expander, UseExpansionMethod } from '@cisstech/nestjs-expand' import { PostDTO } from './post.dto' import { UserExpanderMethods } from '../users/user.expander-methods' // Assuming this class exists @Injectable() @Expander(PostDTO) @UseExpansionMethod<PostDTO, UserExpanderMethods>({ name: 'author', // Field name in PostDTO class: UserExpanderMethods, // Class with reusable logic method: 'fetchUserById', // Method to call // Simple mapping: Use PostDTO.authorId as the argument params: ['authorId'], // Complex mapping example: // params: (context) => [context.parent.authorId, context.request.headers['tenant']] }) export class PostExpander { // No need to define the 'author' method here } 3. Register Providers: Ensure both PostExpander and UserExpanderMethods are registered in your module."
+  },
+  {
+    "slug": "/docs/nestjs-expand/advanced-usage#error-handling",
+    "title": "Advanced Usage",
+    "heading": "Error Handling",
+    "content": "The library provides comprehensive error handling capabilities for expansions. You can control how errors are handled using policies, customize error messages, and include error details in responses."
+  },
+  {
+    "slug": "/docs/nestjs-expand/advanced-usage#error-policies",
+    "title": "Advanced Usage",
+    "heading": "Error Policies",
+    "content": "Three error policies are available: ignore (default): When an expansion fails, it's silently ignored and the request continues include: Expansion errors are attached to the response for debugging throw: If any expansion fails, the entire request fails with an error You can set a default policy at the module level and override it per endpoint: // Module level setting NestKitExpandModule.forRoot({ errorHandling: { defaultErrorPolicy: 'include', includeErrorsInResponse: true } }) // Endpoint level override @Get() @Expandable(UserDTO, { errorPolicy: 'throw' }) findAll() { return this.userService.findAll(); }"
+  },
+  {
+    "slug": "/docs/nestjs-expand/advanced-usage#including-error-details-in-responses",
+    "title": "Advanced Usage",
+    "heading": "Including Error Details in Responses",
+    "content": "When includeErrorsInResponse is set to true, error details are included in the response: // For single objects { \"id\": 1, \"name\": \"John\", \"expansionErrors\": { \"UserDTO.profile\": { \"message\": \"Profile not found\", \"path\": \"UserDTO.profile\" } } } // For collections, errors are attached to individual items [ { \"id\": 1, \"name\": \"John\", \"expansionErrors\": { \"UserDTO.failingExpander\": { \"message\": \"This expander always fails\", \"path\": \"UserDTO.failingExpander[0]\" } } }, { \"id\": 2, \"name\": \"Jane\", \"expansionErrors\": { \"UserDTO.profile\": { \"message\": \"Profile not found\", \"path\": \"UserDTO.profile[1]\" } } } ]"
+  },
+  {
+    "slug": "/docs/nestjs-expand/advanced-usage#customizing-error-format",
+    "title": "Advanced Usage",
+    "heading": "Customizing Error Format",
+    "content": "You can customize the format of error details using the errorResponseShape function: NestKitExpandModule.forRoot({ errorHandling: { includeErrorsInResponse: true, errorResponseShape: (error, path) => ({ message: Custom format: ${error.message}, path: path, code: error instanceof HttpException ? error.getStatus() : 'UNKNOWN', timestamp: new Date().toISOString(), }), }, })"
+  },
+  {
+    "slug": "/docs/nestjs-expand/advanced-usage#query-language",
+    "title": "Advanced Usage",
+    "heading": "Query Language",
+    "content": "This library comes with a powerful query language that allows expanding and selecting resource fields using query params. Expand Nested Resources GET /courses?expands=instructor,parent.instructor,instructor.address Select Specific Properties GET /courses?expands=instructor,parent&selects=id,title,instructor.name,parent.title Use Wildcard and Minus Operators Wildcard operator allows selecting all fields on the current level of your dot notation. Minus operator - allows excluding some fields combined with or without. GET /courses?expands=instructor,parent&selects=,-description,instructor.,-instructor.id,-instructor.bio,parent.title This query is translated into { '': true, // select all fields from root description: false, // exclude description field instructor: { '': true, // select all fields of the instructor id: false, // exclude id field bio: false // exclude bio field }, parent: { title: true // select only title field of the parent } }"
+  },
+  {
+    "slug": "/docs/nestjs-expand/error-handling",
+    "title": "Error Handling",
+    "content": "The NestJS Expand library provides comprehensive error handling for expansion operations. This documentation explains how to configure error handling behavior and implement custom error handling strategies."
+  },
+  {
+    "slug": "/docs/nestjs-expand/error-handling#error-handling-policies",
+    "title": "Error Handling",
+    "heading": "Error Handling Policies",
+    "content": "The library supports three error policies to control how expansion errors are handled: ignore (default): When an expansion fails, the expander is silently skipped and the request continues processing other expanders include: Error details are included in the response for debugging purposes throw: If any expansion fails, the entire request fails with an error response"
+  },
+  {
+    "slug": "/docs/nestjs-expand/error-handling#setting-error-policies",
+    "title": "Error Handling",
+    "heading": "Setting Error Policies",
+    "content": "You can set error policies at both the module level and the endpoint level: // Module level - applies to all endpoints NestKitExpandModule.forRoot({ errorHandling: { defaultErrorPolicy: 'include', includeErrorsInResponse: true } }) // Endpoint level - overrides module level for specific endpoint @Get('users') @Expandable(UserDTO, { errorPolicy: 'throw' }) findAll() { return this.userService.findAll(); }"
+  },
+  {
+    "slug": "/docs/nestjs-expand/error-handling#including-error-details-in-responses",
+    "title": "Error Handling",
+    "heading": "Including Error Details in Responses",
+    "content": "When includeErrorsInResponse is set to true and policy is either ignore or include, error details are attached to the response: For single objects, errors are added as an expansionErrors property: { \"id\": 1, \"name\": \"John Doe\", \"email\": \"john@example.com\", \"expansionErrors\": { \"UserDTO.profile\": { \"message\": \"Profile not found\", \"path\": \"UserDTO.profile\" } } } For array responses, errors are attached to individual items that caused them: [ { \"id\": 1, \"name\": \"John Doe\", \"email\": \"john@example.com\", \"profile\": { \"id\": 1, \"bio\": \"Software developer\" } }, { \"id\": 2, \"name\": \"Jane Smith\", \"email\": \"jane@example.com\", \"expansionErrors\": { \"UserDTO.profile\": { \"message\": \"Profile not found\", \"path\": \"UserDTO.profile[1]\" } } } ]"
+  },
+  {
+    "slug": "/docs/nestjs-expand/error-handling#customizing-error-format",
+    "title": "Error Handling",
+    "heading": "Customizing Error Format",
+    "content": "You can customize how errors are formatted in responses using the errorResponseShape function: NestKitExpandModule.forRoot({ errorHandling: { includeErrorsInResponse: true, errorResponseShape: (error, path) => ({ message: Failed to expand ${path.split('.').pop()}: ${error.message}, code: error.code 'EXPANSIONERROR', timestamp: new Date().toISOString(), path: path, }), }, })"
+  },
+  {
+    "slug": "/docs/nestjs-expand/error-handling#handling-root-field-errors",
+    "title": "Error Handling",
+    "heading": "Handling Root Field Errors",
+    "content": "When using the rootField option, error handling works as expected with errors being attached to the items within the root field: @Get('users/paged') @Expandable(UserDTO, { rootField: 'items' }) findPaged() { return { items: this.userService.findAll(), total: 100, page: 1 }; } Example response: { \"items\": [ { \"id\": 1, \"name\": \"John Doe\", \"profile\": { \"bio\": \"Developer\" } }, { \"id\": 2, \"name\": \"Jane Smith\", \"expansionErrors\": { \"UserDTO.profile\": { \"message\": \"Profile not found\", \"path\": \"UserDTO.profile[1]\" } } } ], \"total\": 100, \"page\": 1 }"
+  },
+  {
+    "slug": "/docs/nestjs-expand/error-handling#logging-configuration",
+    "title": "Error Handling",
+    "heading": "Logging Configuration",
+    "content": "You can control the verbosity of error logging with the logLevel option: NestKitExpandModule.forRoot({ logLevel: 'warn', // 'debug' 'log' 'warn' 'error' 'none' // other config... })"
+  },
+  {
+    "slug": "/docs/nestjs-expand/error-handling#complete-example",
+    "title": "Error Handling",
+    "heading": "Complete Example",
+    "content": "Here's a complete example showing multiple error handling strategies: // app.module.ts @Module({ imports: [ NestKitExpandModule.forRoot({ enableLogging: true, logLevel: 'warn', errorHandling: { includeErrorsInResponse: true, defaultErrorPolicy: 'ignore', errorResponseShape: (error, path) => ({ message: error.message, path: path, timestamp: new Date().toISOString(), }), }, }), ], // other config... }) export class AppModule {} // user.controller.ts @Controller('users') export class UserController { @Get() @Expandable(UserDTO) // Uses default error policy findAll() { return this.userService.findAll() } @Get('safe') @Expandable(UserDTO, { errorPolicy: 'ignore' }) findSafe() { return this.userService.findAll() } @Get('debug') @Expandable(UserDTO, { errorPolicy: 'include' }) findWithErrorInfo() { return this.userService.findAll() } @Get('strict') @Expandable(UserDTO, { errorPolicy: 'throw' }) findStrict() { return this.userService.findAll() } } With these configurations, you have complete control over how expansion errors are handled, logged, and presented to API consumers."
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/getting-started#what-this-library-does",
+    "title": "Getting Started",
+    "heading": "What This Library Does",
+    "content": "This library turns PostgreSQL into a reliable change data capture (CDC) system for NestJS. When a row is inserted, updated or deleted in a monitored table, a PostgreSQL trigger persists the change in a queue table and sends a NOTIFY. The library picks up that notification, pulls pending messages from the queue, and dispatches them to your typed listener classes. The result: you get real-time reactivity (via LISTEN/NOTIFY) with guaranteed delivery (via the persistent queue). No external broker needed."
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/getting-started#architecture",
+    "title": "Getting Started",
+    "heading": "Architecture",
+    "content": "┌──────────────┐ trigger ┌──────────────────┐ NOTIFY ┌──────────────────┐ │ Your Table │ ──────────────► │ pgpubsubqueue │ ──────────► │ PgPubSubService │ │ (INSERT/ │ │ (persistent) │ │ (pull + drain) │ │ UPDATE/ │ └──────────────────┘ └────────┬─────────┘ │ DELETE) │ │ └──────────────┘ ▼ ┌──────────────────┐ │ Your Listeners │ │ (@Register...) │ └──────────────────┘"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/getting-started#message-lifecycle",
+    "title": "Getting Started",
+    "heading": "Message Lifecycle",
+    "content": "1. Capture: a trigger fires on the monitored table and inserts a JSON payload into pgpubsubqueue with status pending 2. Notify: the same trigger sends a pgnotify with the channel name 3. Pull: the service receives the notification and fetches pending messages with SELECT FOR UPDATE SKIP LOCKED 4. Process: messages are grouped by table and dispatched to matching listeners 5. Ack/Fail: successful messages go to processed; failed ones go to failed with exponential retry ($2^{n}$ minutes, up to maxRetries) 6. Cleanup: a background job periodically deletes old processed/dead messages"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/getting-started#safety-nets",
+    "title": "Getting Started",
+    "heading": "Safety Nets",
+    "content": "Fallback poller: runs every fallbackPollingInterval (default 60s) to catch anything missed by NOTIFY Orphan recovery: on startup, messages stuck in processing past their processingTimeout are reset to pending Backpressure: concurrent notifications are coalesced so that at most one pull cycle runs at a time Trigger fingerprinting: trigger DDL is hashed (MD5) and only recreated when config changes"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/getting-started#important-constraints",
+    "title": "Getting Started",
+    "heading": "Important Constraints",
+    "content": "Avoid long-running work in listeners. The listener runs inside the drain loop. A slow handler blocks processing and can cause the processingTimeout to expire, leading to orphan recovery and duplicate processing. Use transactional listeners for multi-table writes. If your listener needs to write to several tables atomically, mark it as transactional: true and provide a transactionAdapter in the module config. See Advanced Usage > Transaction Management. Keep listeners fast. If you need heavy work, enqueue to an external job queue (Bull, etc.) from the listener."
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/getting-started#prerequisites",
+    "title": "Getting Started",
+    "heading": "Prerequisites",
+    "content": "NestJS v10+ or v11+ PostgreSQL database TypeORM configured in your application"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/getting-started#additional-resources",
+    "title": "Getting Started",
+    "heading": "Additional Resources",
+    "content": "PostgreSQL NOTIFY PostgreSQL LISTEN"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/getting-started#license",
+    "title": "Getting Started",
+    "heading": "License",
+    "content": "MIT © Mamadou Cisse"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/installation#prerequisites",
+    "title": "Installation",
+    "heading": "Prerequisites",
+    "content": "NestJS v10+ or v11+ PostgreSQL database TypeORM installed and configured"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/installation#install",
+    "title": "Installation",
+    "heading": "Install",
+    "content": "yarn add @cisstech/nestjs-pg-pubsub pg Or with npm: npm install @cisstech/nestjs-pg-pubsub pg pg is a peer dependency. Skip it if you already have it."
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/usage#module-registration",
+    "title": "Usage",
+    "heading": "Module Registration",
+    "content": "import { Module } from '@nestjs/common' import { TypeOrmModule } from '@nestjs/typeorm' import { PgPubSubModule } from '@cisstech/nestjs-pg-pubsub' import { UserChangeListener } from './listeners/user-change.listener' @Module({ imports: [ TypeOrmModule.forRoot({ / ... / }), PgPubSubModule.forRoot({ databaseUrl: process.env.DATABASEURL, }), ], providers: [UserChangeListener], }) export class AppModule {} That's all. The library creates the queue table and triggers on startup."
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/usage#listening-to-table-changes",
+    "title": "Usage",
+    "heading": "Listening to Table Changes",
+    "content": "Decorate a class with @RegisterPgTableChangeListener and implement PgTableChangeListener<T>: @Injectable() @RegisterPgTableChangeListener(User) export class UserChangeListener implements PgTableChangeListener<User> { async process(changes: PgTableChanges<User>, ctx: PgTableChangeContext): Promise<void> { for (const insert of changes.INSERT) { console.log(New user: ${insert.data.email}) } for (const update of changes.UPDATE) { console.log(Updated: ${update.data.updatedFields.join(', ')}) // update.data.old and update.data.new are available } for (const deletion of changes.DELETE) { console.log(Deleted: ${deletion.data.email}) } } }"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/usage#filtering-events-and-fields",
+    "title": "Usage",
+    "heading": "Filtering Events and Fields",
+    "content": "@RegisterPgTableChangeListener(User, { events: ['INSERT', 'UPDATE'], // only these events (default: all) payloadFields: ['id', 'email'], // only these columns in the payload (default: all) })"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/usage#error-handling",
+    "title": "Usage",
+    "heading": "Error Handling",
+    "content": "Use ctx.onError to mark specific messages as failed. They will be retried with exponential backoff. async process(changes: PgTableChanges<User>, ctx: PgTableChangeContext): Promise<void> { for (const change of changes.all) { try { await this.doSomething(change) } catch { ctx.onError([change.id]) // this message will be retried } } } If the entire process() method throws without calling ctx.onError, all messages in the batch are marked as failed."
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/usage#retry-metadata",
+    "title": "Usage",
+    "heading": "Retry Metadata",
+    "content": "Each payload carries metadata with retrycount (0 on first attempt) and createdat. This is useful when syncing to external systems: on retry, fetch fresh data from the DB instead of using the potentially stale payload: const retryCount = change.metadata?.retrycount ?? 0 if (retryCount >= 1) { const fresh = await this.userRepo.findOneBy({ id: change.data.id }) if (!fresh) return // deleted since, skip await this.syncToExternalSystem(fresh) } else { await this.syncToExternalSystem(change.data) }"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/usage#multiple-listeners-per-table",
+    "title": "Usage",
+    "heading": "Multiple Listeners per Table",
+    "content": "Multiple listeners on the same table are supported. The library merges their event registrations into a single trigger: @RegisterPgTableChangeListener(User, { events: ['INSERT'] }) export class UserCreationListener implements PgTableChangeListener<User> { / ... / } @RegisterPgTableChangeListener(User, { events: ['UPDATE'] }) export class UserUpdateListener implements PgTableChangeListener<User> { / ... / }"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/usage#custom-notify-subscriptions",
+    "title": "Usage",
+    "heading": "Custom NOTIFY Subscriptions",
+    "content": "You can also subscribe to arbitrary PostgreSQL NOTIFY channels (unrelated to table triggers): @Injectable() export class CustomEventService implements OnModuleInit { constructor(private readonly pgPubSubService: PgPubSubService) {} async onModuleInit(): Promise<void> { await this.pgPubSubService.susbcribe<{ action: string }>('my-channel', (payload) => { console.log(payload.action) }) } }"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/advanced-usage#configuration-reference",
+    "title": "Advanced Usage",
+    "heading": "Configuration Reference",
+    "content": "All options except databaseUrl are optional. PgPubSubModule.forRoot({ databaseUrl: process.env.DATABASEURL, ssl: { rejectUnauthorized: true, ca: '...' }, triggerPrefix: 'myprefix', // default: 'pubsubtrigger' triggerSchema: 'myschema', // default: 'public' fallbackPollingInterval: 60000, // ms, safety-net polling interval lockDuration: 5000, // ms, advisory lock duration for DDL setup pool: { max: 5, // dedicated pg.Pool connections (independent of TypeORM) }, queue: { table: 'pgpubsubqueue', batchSize: 100, // max messages per pull cycle drainInterval: 50, // ms, pause between drain loop iterations processingTimeout: 300000, // ms, after this 'processing' messages are considered orphaned maxRetries: 5, messageTTL: 86400000, // ms, cleanup threshold for old messages (24h) cleanupInterval: 3600000, // ms, how often the cleanup job runs (1h) }, })"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/advanced-usage#key-options-explained",
+    "title": "Advanced Usage",
+    "heading": "Key Options Explained",
+    "content": "triggerPrefix: All triggers created by the library are named {triggerPrefix}{tablename}. On startup, triggers matching this prefix that are no longer needed are dropped. Choose a unique prefix per module if you use multiple PgPubSubModule.forRoot() registrations. queue.drainInterval: After processing a batch, the drain loop waits this long before fetching the next batch. Prevents tight-looping that could saturate the database under high throughput. Set to 0 to disable. queue.processingTimeout: Messages are moved to processing while being handled. If a message stays in processing longer than this timeout (e.g., the process crashed), it is considered orphaned and reset to pending on the next startup. Must be longer than your slowest listener. pool.max: The library uses its own pg.Pool for all SQL operations (queue reads, advisory locks, trigger DDL). This pool is completely independent of TypeORM's pool, ensuring pg-pubsub keeps working even when TypeORM's pool is exhausted."
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/advanced-usage#transaction-management",
+    "title": "Advanced Usage",
+    "heading": "Transaction Management",
+    "content": "By default, listeners run without a transaction: you handle errors granularly via ctx.onError. For listeners that need atomicity (e.g., writing to multiple tables), the library supports wrapping the entire listener execution in a transaction via an ORM-agnostic adapter."
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/advanced-usage#1-provide-a-transactionadapter",
+    "title": "Advanced Usage",
+    "heading": "1. Provide a TransactionAdapter",
+    "content": "A TransactionAdapter opens a transaction, executes a callback, and commits on success or rolls back on failure. Here is a TypeORM example: import { TransactionAdapter } from '@cisstech/nestjs-pg-pubsub' import { DataSource, EntityManager } from 'typeorm' export class TypeOrmTransactionAdapter implements TransactionAdapter<EntityManager> { constructor(private readonly dataSource: DataSource) {} async run<T>(callback: (em: EntityManager) => Promise<T>): Promise<T> { return this.dataSource.transaction(callback) } } Register it in the module config: PgPubSubModule.forRoot({ databaseUrl: process.env.DATABASEURL, transactionAdapter: new TypeOrmTransactionAdapter(dataSource), }) The adapter is ORM-agnostic. TToken can be anything: a Prisma $transaction client, a Knex transaction, etc."
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/advanced-usage#2-mark-listeners-as-transactional",
+    "title": "Advanced Usage",
+    "heading": "2. Mark Listeners as Transactional",
+    "content": "Add transactional: true to the decorator options: @Injectable() @RegisterPgTableChangeListener(Order, { transactional: true }) export class OrderChangeListener implements PgTableChangeListener<Order, EntityManager> { async process(changes: PgTableChanges<Order>, ctx: PgTableChangeContext<EntityManager>): Promise<void> { const em = ctx.transaction! // EntityManager bound to the active transaction for (const insert of changes.INSERT) { await em.getRepository(AuditLog).save({ action: 'ORDERCREATED', orderId: insert.data.id, }) } } }"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/advanced-usage#how-it-works",
+    "title": "Advanced Usage",
+    "heading": "How It Works",
+    "content": "The library calls transactionAdapter.run() around your process() method ctx.transaction receives the opaque token (e.g., EntityManager) from the adapter On success, the transaction commits and messages are marked as processed On failure (thrown error), the transaction rolls back and all message IDs in the batch are marked as failed for retry ctx.onError is a no-op in transactional mode. To signal failure, throw an exception instead"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/advanced-usage#boot-validation",
+    "title": "Advanced Usage",
+    "heading": "Boot Validation",
+    "content": "If any listener has transactional: true but no transactionAdapter is provided in the config, the application fails to start with a clear error message. This prevents silent misconfiguration."
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/advanced-usage#concurrency",
+    "title": "Advanced Usage",
+    "heading": "Concurrency",
+    "content": "Listener executions are bounded by a semaphore (default: 5 concurrent). Configure it with queue.concurrency: PgPubSubModule.forRoot({ databaseUrl: process.env.DATABASEURL, queue: { concurrency: 10, // max parallel listener executions }, }) This applies to both transactional and non-transactional listeners."
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/advanced-usage#controlling-the-listener-at-runtime",
+    "title": "Advanced Usage",
+    "heading": "Controlling the Listener at Runtime",
+    "content": ""
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/advanced-usage#pause-resume",
+    "title": "Advanced Usage",
+    "heading": "Pause / Resume",
+    "content": "await this.pgPubSubService.pause() // stop listening, stop processing notifications await this.pgPubSubService.resume() // reconnect and start listening again Messages inserted while paused accumulate in the queue and are processed on resume."
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/advanced-usage#suspend-and-run",
+    "title": "Advanced Usage",
+    "heading": "Suspend and Run",
+    "content": "Pause, execute a callback, resume (even if the callback throws): await this.pgPubSubService.suspendAndRun(async () => { await this.runMigrations() })"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/advanced-usage#disable-triggers-for-specific-operations",
+    "title": "Advanced Usage",
+    "heading": "Disable Triggers for Specific Operations",
+    "content": "When performing bulk operations (cascade deletes, data migrations), suppress trigger notifications with withTriggersDisabled. This sets SET LOCAL pgpubsub.disabled = 'true' and only affects the current transaction. Other sessions are not impacted. // TypeORM variant: provides an EntityManager await this.pgPubSubService.withTriggersDisabled(async (em) => { await em.getRepository(Customer).delete(customerId) }) // Raw SQL variant: uses the dedicated pg pool await this.pgPubSubService.withTriggersDisabledRaw(async (query) => { await query('DELETE FROM orders WHERE customerid = $1', [customerId]) await query('DELETE FROM customers WHERE id = $1', [customerId]) })"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/sample-application",
+    "title": "Sample Application",
+    "content": "The repository includes a working sample at apps/app/src/app/samples/pubsub/ that wires together: Two TypeORM entities (User, Notification) A PgTableChangeListener that reacts to notification inserts/updates/deletes A Socket.IO WebSocket gateway that pushes changes to connected clients in real-time REST controllers for CRUD operations"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/sample-application#running-it",
+    "title": "Sample Application",
+    "heading": "Running It",
+    "content": "1. Start PostgreSQL and Redis: docker-compose up -d 1. Create a .env file: DATABASEURL=postgresql://postgres:postgres@localhost:5432/yourdatabase REDISHOST=localhost REDISPORT=6379 1. Start the API: yarn nx run api:serve 1. The API is available at http://localhost:3000/api/v1"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/sample-application#testing",
+    "title": "Sample Application",
+    "heading": "Testing",
+    "content": "Use the REST Client file at samples/demo/requests.http to create users and notifications via the API. Changes are automatically pushed to connected WebSocket clients. Connect a WebSocket client: import { io } from 'socket.io-client' const socket = io('http://localhost:3000/notifications', { query: { userId: 'USERID' }, }) socket.on('new-notification', (data) => console.log('new:', data)) socket.on('notification-status-changed', (data) => console.log('updated:', data)) socket.on('notification-deleted', (data) => console.log('deleted:', data)) Or run the included client: node apps/api/src/app/samples/pubsub/demo/client-demo.js"
+  },
+  {
+    "slug": "/docs/nestjs-pg-pubsub/sample-application#how-the-listener-works",
+    "title": "Sample Application",
+    "heading": "How the Listener Works",
+    "content": "The key piece is NotificationChangeListener: @Injectable() @RegisterPgTableChangeListener(Notification, { events: ['INSERT', 'UPDATE', 'DELETE'], payloadFields: ['id', 'title', 'type', 'read', 'userId'], }) export class NotificationChangeListener implements PgTableChangeListener<Notification> { constructor(private readonly websocketGateway: WebsocketGateway) {} async process(changes: PgTableChanges<Notification>, ctx: PgTableChangeContext): Promise<void> { for (const insert of changes.INSERT) { this.websocketGateway.notifyUser(insert.data.userId, 'new-notification', { id: insert.data.id, title: insert.data.title, type: insert.data.type, }) } for (const update of changes.UPDATE) { if (update.data.updatedFields.includes('read')) { this.websocketGateway.notifyUser(update.data.new.userId, 'notification-status-changed', { id: update.data.new.id, read: update.data.new.read, }) } } for (const deletion of changes.DELETE) { this.websocketGateway.notifyUser(deletion.data.userId, 'notification-deleted', { id: deletion.data.id }) } } } Note how the listener stays fast: it just dispatches to the WebSocket gateway without any DB writes or transactions. See Usage > Important Constraints for why this matters."
+  },
+  {
+    "slug": "/docs/api",
+    "title": "API",
+    "content": "Generated from the source. Every export, grouped by kind."
+  },
+  {
+    "slug": "/docs/api#functions",
+    "title": "API",
+    "heading": "Functions",
+    "content": "Expandable - Decorator controller/expander method as expandable (for recursive expansion). Expander - Decorator function to mark a class as a standard expander for a specific DTO. ExpanderMethods - Decorator function to mark a class as containing reusable expansion methods. RegisterPgTableChangeListener - Decorator to register a PostgreSQL table change listener. Selectable - Decorator function to mark a controller endpoint response as selectable. UseExpansionMethod - Decorator function to link a field in an"
+  },
+  {
+    "slug": "/docs/api#classes",
+    "title": "API",
+    "heading": "Classes",
+    "content": "NestKitExpandModule PgLockService - PostgreSQL advisory lock service. PgPubSubModule PgPubSubService - Subscribes to PostgreSQL pub/sub triggers and handles table changes."
+  },
+  {
+    "slug": "/docs/api#interfaces",
+    "title": "API",
+    "heading": "Interfaces",
+    "content": "ListenerDiscovery - Result of discovering and processing table change listeners. LockOptions - Options for acquiring an advisory lock. PgTableChangeContext - Context passed to a listener's process method. PgTableChangeListener - Type for a handler that listens to changes on a PostgreSQL table. PoolConfig - Configuration for the dedicated PG connection pool. QueueConfig - Queue processing configuration QueuedMessage - Representation of a message in the queue ResolvedListener - A discovered listener with its resolved metadata. TableListener - Describes a table and the events/fields a listener is interested in. TransactionAdapter - ORM-agnostic adapter for running listener logic inside a transaction. TriggerMetadata - Metadata describing a PostgreSQL trigger."
+  },
+  {
+    "slug": "/docs/api#type-aliases",
+    "title": "API",
+    "heading": "Type aliases",
+    "content": "DiscoveredPgTableChangeListener - Type representing a class discovered with metadata @RegisterPgTableChangeListener ExpandableParams - Represents parameters for making a controller/expander response expandable. ExpandConfig - Represents configuration for the ExpandModule. ExpandContext - Represents the context in which an expansion is performed. ExpanderMethodsParams - Parameters for the ExpandErrorPolicy - Error policy for expansion errors. ExpansionError - Represents error metadata for failed expansions. ExpansionErrorFormatter - Format function for expansion errors. ExpansionErrorHandlingConfig - Error handling configuration for expansions. PgPubSubConfig - Configuration for the PostgreSQL pubsub module. PgTableChangeErrorHandler - Type for a callback to handle errors when processing a change. PgTableChangePayload - Type for a PostgreSQL table change payload. PgTableChanges - Type for a batch of changes received for a PostgreSQL table. PgTableChangeType - Type for a PostgreSQL table change type. PgTableDeletePayload - Type for a PostgreSQL table DELETE payload. PgTableInsertPayload - Type for a PostgreSQL table INSERT payload. PgTableUpdatePayload - Type for a PostgreSQL table UPDATE payload. RegisterPgTableChangeListenerMetadata ReusableExpandMethod - Represents a method within a SelectableParams - Represents parameters for making a controller response selectable. StandardExpandMethod - Represents a standard method on an UseExpansionMethodConfig - Configuration for the UseExpansionMethodMetadata - Metadata stored by the"
+  },
+  {
+    "slug": "/docs/api#variables",
+    "title": "API",
+    "heading": "Variables",
+    "content": "DEFAULTEXPANDCONFIG EXPANDCONFIG - Injection token for the ExpandConfig. EXPANDABLEKEY - Symbol key for metadata associated with expandable parameters on controller/expander methods. EXPANDERKEY - Symbol key for metadata associated with expanders. EXPANDERMETHODSKEY - Symbol key for metadata associated with classes containing reusable expander methods. PGPUBSUBCONFIG - Symbol for the configuration of the PostgreSQL pubsub module. PGPUBSUBDRAININTERVAL - Default delay in milliseconds between drain loop iterations. PGPUBSUBFALLBACKPOLLINGINTERVAL - Default fallback polling interval in milliseconds. PGPUBSUBLOCKDURATION - Default advisory lock duration in milliseconds. PGPUBSUBPOOLMAX - Default maximum number of connections in the dedicated pool. PGPUBSUBQUEUEBATCHSIZE - Default batch size for fetching pending messages. PGPUBSUBQUEUECLEANUPINTERVAL - Default cleanup interval in milliseconds. PGPUBSUBQUEUECONCURRENCY - Default maximum number of concurrent listener executions. PGPUBSUBQUEUEMAXRETRIES - Default max retries for a failed message. PGPUBSUBQUEUEMESSAGETTL - Default message TTL in milliseconds. PGPUBSUBQUEUEPROCESSINGTIMEOUT - Default processing timeout in milliseconds. PGPUBSUBQUEUESCHEMA - Default queue schema. PGPUBSUBQUEUETABLE - Default queue table name. PGPUBSUBTRIGGERNAME - Trigger channel name and prefix for created triggers. PGPUBSUBTRIGGERSCHEMA - Default schema for tables and triggers. RegisterPgTableChangeListenerMeta - Symbol for the metadata key used to register a PostgreSQL table change listener. SELECTABLEKEY - Symbol key for metadata associated with selectable parameters. USEEXPANSIONMETHODKEY - Symbol key for metadata associated with linking reusable expander methods."
+  },
+  {
+    "slug": "/docs/api/functions/Expandable",
+    "title": "Expandable",
+    "content": "function Decorator controller/expander method as expandable (for recursive expansion). Also used on controller endpoints to enable expansion for the response."
+  },
+  {
+    "slug": "/docs/api/functions/Expandable#signature",
+    "title": "Expandable",
+    "heading": "Signature",
+    "content": "function Expandable(target: Function, config?: Omit<ExpandableParams, \"target\">): CustomDecorator<typeof EXPANDABLEKEY>"
+  },
+  {
+    "slug": "/docs/api/functions/Expandable#parameters",
+    "title": "Expandable",
+    "heading": "Parameters",
+    "content": "target (Function) - The DTO class returned by the method/endpoint. config (Omit<ExpandableParams, \"target\">) - Additional configuration for expandable parameters."
+  },
+  {
+    "slug": "/docs/api/functions/Expandable#returns",
+    "title": "Expandable",
+    "heading": "Returns",
+    "content": "CustomDecorator<typeof EXPANDABLEKEY>"
+  },
+  {
+    "slug": "/docs/api/functions/Expander",
+    "title": "Expander",
+    "content": "function Decorator function to mark a class as a standard expander for a specific DTO."
+  },
+  {
+    "slug": "/docs/api/functions/Expander#signature",
+    "title": "Expander",
+    "heading": "Signature",
+    "content": "function Expander(target: Function): CustomDecorator<typeof EXPANDERKEY>"
+  },
+  {
+    "slug": "/docs/api/functions/Expander#parameters",
+    "title": "Expander",
+    "heading": "Parameters",
+    "content": "target (Function) - The DTO class this expander is responsible for."
+  },
+  {
+    "slug": "/docs/api/functions/Expander#returns",
+    "title": "Expander",
+    "heading": "Returns",
+    "content": "CustomDecorator<typeof EXPANDERKEY>"
+  },
+  {
+    "slug": "/docs/api/functions/ExpanderMethods",
+    "title": "ExpanderMethods",
+    "content": "function Decorator function to mark a class as containing reusable expansion methods."
+  },
+  {
+    "slug": "/docs/api/functions/ExpanderMethods#signature",
+    "title": "ExpanderMethods",
+    "heading": "Signature",
+    "content": "function ExpanderMethods(params?: ExpanderMethodsParams): CustomDecorator<typeof EXPANDERMETHODSKEY>"
+  },
+  {
+    "slug": "/docs/api/functions/ExpanderMethods#parameters",
+    "title": "ExpanderMethods",
+    "heading": "Parameters",
+    "content": "params (ExpanderMethodsParams) - Optional parameters."
+  },
+  {
+    "slug": "/docs/api/functions/ExpanderMethods#returns",
+    "title": "ExpanderMethods",
+    "heading": "Returns",
+    "content": "CustomDecorator<typeof EXPANDERMETHODSKEY>"
+  },
+  {
+    "slug": "/docs/api/functions/RegisterPgTableChangeListener",
+    "title": "RegisterPgTableChangeListener",
+    "content": "function Decorator to register a PostgreSQL table change listener."
+  },
+  {
+    "slug": "/docs/api/functions/RegisterPgTableChangeListener#signature",
+    "title": "RegisterPgTableChangeListener",
+    "heading": "Signature",
+    "content": "function RegisterPgTableChangeListener(target: EntityTarget<T>, params?: Omit<RegisterPgTableChangeListenerMetadata<any>, \"target\">): CustomDecorator<typeof RegisterPgTableChangeListenerMeta>"
+  },
+  {
+    "slug": "/docs/api/functions/RegisterPgTableChangeListener#parameters",
+    "title": "RegisterPgTableChangeListener",
+    "heading": "Parameters",
+    "content": "target (EntityTarget<T>) params (Omit<RegisterPgTableChangeListenerMetadata<any>, \"target\">)"
+  },
+  {
+    "slug": "/docs/api/functions/RegisterPgTableChangeListener#returns",
+    "title": "RegisterPgTableChangeListener",
+    "heading": "Returns",
+    "content": "CustomDecorator<typeof RegisterPgTableChangeListenerMeta>"
+  },
+  {
+    "slug": "/docs/api/functions/Selectable",
+    "title": "Selectable",
+    "content": "function Decorator function to mark a controller endpoint response as selectable."
+  },
+  {
+    "slug": "/docs/api/functions/Selectable#signature",
+    "title": "Selectable",
+    "heading": "Signature",
+    "content": "function Selectable(config?: SelectableParams): CustomDecorator<typeof SELECTABLEKEY>"
+  },
+  {
+    "slug": "/docs/api/functions/Selectable#parameters",
+    "title": "Selectable",
+    "heading": "Parameters",
+    "content": "config (SelectableParams)"
+  },
+  {
+    "slug": "/docs/api/functions/Selectable#returns",
+    "title": "Selectable",
+    "heading": "Returns",
+    "content": "CustomDecorator<typeof SELECTABLEKEY>"
+  },
+  {
+    "slug": "/docs/api/functions/UseExpansionMethod",
+    "title": "UseExpansionMethod",
+    "content": "function Decorator function to link a field in an"
+  },
+  {
+    "slug": "/docs/api/functions/UseExpansionMethod#signature",
+    "title": "UseExpansionMethod",
+    "heading": "Signature",
+    "content": "function UseExpansionMethod(config: UseExpansionMethodConfig<TParentResource, TReusableExpander>): ClassDecorator"
+  },
+  {
+    "slug": "/docs/api/functions/UseExpansionMethod#parameters",
+    "title": "UseExpansionMethod",
+    "heading": "Parameters",
+    "content": "config (UseExpansionMethodConfig<TParentResource, TReusableExpander>) - Configuration detailing the field name, reusable class, method, and parameter mapping."
+  },
+  {
+    "slug": "/docs/api/functions/UseExpansionMethod#returns",
+    "title": "UseExpansionMethod",
+    "heading": "Returns",
+    "content": "ClassDecorator"
+  },
+  {
+    "slug": "/docs/api/classes/NestKitExpandModule",
+    "title": "NestKitExpandModule",
+    "content": "class"
+  },
+  {
+    "slug": "/docs/api/classes/NestKitExpandModule#forroot",
+    "title": "NestKitExpandModule",
+    "heading": "`forRoot()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/classes/NestKitExpandModule#signature",
+    "title": "NestKitExpandModule",
+    "heading": "Signature",
+    "content": "forRoot(config?: ExpandConfig): DynamicModule"
+  },
+  {
+    "slug": "/docs/api/classes/NestKitExpandModule#parameters",
+    "title": "NestKitExpandModule",
+    "heading": "Parameters",
+    "content": "config (ExpandConfig)"
+  },
+  {
+    "slug": "/docs/api/classes/NestKitExpandModule#returns",
+    "title": "NestKitExpandModule",
+    "heading": "Returns",
+    "content": "DynamicModule"
+  },
+  {
+    "slug": "/docs/api/classes/PgLockService",
+    "title": "PgLockService",
+    "content": "class PostgreSQL advisory lock service. Works across multiple processes sharing the same database."
+  },
+  {
+    "slug": "/docs/api/classes/PgLockService#onmoduledestroy",
+    "title": "PgLockService",
+    "heading": "`onModuleDestroy()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/classes/PgLockService#signature",
+    "title": "PgLockService",
+    "heading": "Signature",
+    "content": "onModuleDestroy(): Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgLockService#returns",
+    "title": "PgLockService",
+    "heading": "Returns",
+    "content": "Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgLockService#trylock",
+    "title": "PgLockService",
+    "heading": "`tryLock()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/classes/PgLockService#signature",
+    "title": "PgLockService",
+    "heading": "Signature",
+    "content": "tryLock(options: LockOptions): Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgLockService#parameters",
+    "title": "PgLockService",
+    "heading": "Parameters",
+    "content": "options (LockOptions)"
+  },
+  {
+    "slug": "/docs/api/classes/PgLockService#returns",
+    "title": "PgLockService",
+    "heading": "Returns",
+    "content": "Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubModule",
+    "title": "PgPubSubModule",
+    "content": "class"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubModule#forroot",
+    "title": "PgPubSubModule",
+    "heading": "`forRoot()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubModule#signature",
+    "title": "PgPubSubModule",
+    "heading": "Signature",
+    "content": "forRoot(config: PgPubSubConfig): DynamicModule"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubModule#parameters",
+    "title": "PgPubSubModule",
+    "heading": "Parameters",
+    "content": "config (PgPubSubConfig)"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubModule#returns",
+    "title": "PgPubSubModule",
+    "heading": "Returns",
+    "content": "DynamicModule"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService",
+    "title": "PgPubSubService",
+    "content": "class Subscribes to PostgreSQL pub/sub triggers and handles table changes."
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#onmoduledestroy",
+    "title": "PgPubSubService",
+    "heading": "`onModuleDestroy()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#signature",
+    "title": "PgPubSubService",
+    "heading": "Signature",
+    "content": "onModuleDestroy(): Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#returns",
+    "title": "PgPubSubService",
+    "heading": "Returns",
+    "content": "Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#onmoduleinit",
+    "title": "PgPubSubService",
+    "heading": "`onModuleInit()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#signature",
+    "title": "PgPubSubService",
+    "heading": "Signature",
+    "content": "onModuleInit(): Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#returns",
+    "title": "PgPubSubService",
+    "heading": "Returns",
+    "content": "Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#pause",
+    "title": "PgPubSubService",
+    "heading": "`pause()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#signature",
+    "title": "PgPubSubService",
+    "heading": "Signature",
+    "content": "pause(): Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#returns",
+    "title": "PgPubSubService",
+    "heading": "Returns",
+    "content": "Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#resume",
+    "title": "PgPubSubService",
+    "heading": "`resume()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#signature",
+    "title": "PgPubSubService",
+    "heading": "Signature",
+    "content": "resume(): Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#returns",
+    "title": "PgPubSubService",
+    "heading": "Returns",
+    "content": "Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#susbcribe",
+    "title": "PgPubSubService",
+    "heading": "`susbcribe()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#signature",
+    "title": "PgPubSubService",
+    "heading": "Signature",
+    "content": "susbcribe(channel: string, callback: (payload: T) => void): Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#parameters",
+    "title": "PgPubSubService",
+    "heading": "Parameters",
+    "content": "channel (string) callback ((payload: T) => void)"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#returns",
+    "title": "PgPubSubService",
+    "heading": "Returns",
+    "content": "Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#suspendandrun",
+    "title": "PgPubSubService",
+    "heading": "`suspendAndRun()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#signature",
+    "title": "PgPubSubService",
+    "heading": "Signature",
+    "content": "suspendAndRun(action: () => Promise<void>): Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#parameters",
+    "title": "PgPubSubService",
+    "heading": "Parameters",
+    "content": "action (() => Promise<void>)"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#returns",
+    "title": "PgPubSubService",
+    "heading": "Returns",
+    "content": "Promise<void>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#withtriggersdisabled",
+    "title": "PgPubSubService",
+    "heading": "`withTriggersDisabled()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#signature",
+    "title": "PgPubSubService",
+    "heading": "Signature",
+    "content": "withTriggersDisabled(callback: (entityManager: EntityManager) => Promise<T>): Promise<T>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#parameters",
+    "title": "PgPubSubService",
+    "heading": "Parameters",
+    "content": "callback ((entityManager: EntityManager) => Promise<T>)"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#returns",
+    "title": "PgPubSubService",
+    "heading": "Returns",
+    "content": "Promise<T>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#withtriggersdisabledraw",
+    "title": "PgPubSubService",
+    "heading": "`withTriggersDisabledRaw()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#signature",
+    "title": "PgPubSubService",
+    "heading": "Signature",
+    "content": "withTriggersDisabledRaw(callback: (query: (sql: string, params: unknown[]) => Promise<R[]>) => Promise<T>): Promise<T>"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#parameters",
+    "title": "PgPubSubService",
+    "heading": "Parameters",
+    "content": "callback ((query: (sql: string, params: unknown[]) => Promise<R[]>) => Promise<T>)"
+  },
+  {
+    "slug": "/docs/api/classes/PgPubSubService#returns",
+    "title": "PgPubSubService",
+    "heading": "Returns",
+    "content": "Promise<T>"
+  },
+  {
+    "slug": "/docs/api/interfaces/ListenerDiscovery",
+    "title": "ListenerDiscovery",
+    "content": "interface Result of discovering and processing table change listeners."
+  },
+  {
+    "slug": "/docs/api/interfaces/ListenerDiscovery#properties",
+    "title": "ListenerDiscovery",
+    "heading": "Properties",
+    "content": "Name Type Description --- --- --- columnNameToPropNames Record<string, Map<string, string>> Column name to property name mapping for each table. entityMetadataList EntityMetadata[] List of entity metadata. listeners TableListener[] Table listeners. listenersMap Record<string, ResolvedListener<unknown>[]> Map of resolved listeners by table name. propNameToColumnNames Record<string, Map<string, string>> Property name to column name mapping for each table. tableNames string[] List of table names with listeners. tablesMap Record<string, EntityMetadata> Table metadata mapped by table name."
+  },
+  {
+    "slug": "/docs/api/interfaces/LockOptions",
+    "title": "LockOptions",
+    "content": "interface Options for acquiring an advisory lock."
+  },
+  {
+    "slug": "/docs/api/interfaces/LockOptions#properties",
+    "title": "LockOptions",
+    "heading": "Properties",
+    "content": "Name Type Description --- --- --- duration number Duration of the lock in milliseconds. key string Key to lock on. onAccept () => void Promise<void> Callback executed when the lock is acquired. onReject? (error: unknown) => void Promise<void> Optional callback executed when the lock is rejected."
+  },
+  {
+    "slug": "/docs/api/interfaces/PgTableChangeContext",
+    "title": "PgTableChangeContext",
+    "content": "interface Context passed to a listener's process method."
+  },
+  {
+    "slug": "/docs/api/interfaces/PgTableChangeContext#properties",
+    "title": "PgTableChangeContext",
+    "heading": "Properties",
+    "content": "Name Type Description --- --- --- onError PgTableChangeErrorHandler Callback to signal specific message IDs as failed (non-transactional mode). transaction? TToken Opaque transaction token. Present only when transactional: true and a transactionAdapter is configured."
+  },
+  {
+    "slug": "/docs/api/interfaces/PgTableChangeListener",
+    "title": "PgTableChangeListener",
+    "content": "interface Type for a handler that listens to changes on a PostgreSQL table."
+  },
+  {
+    "slug": "/docs/api/interfaces/PgTableChangeListener#process",
+    "title": "PgTableChangeListener",
+    "heading": "`process()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/interfaces/PgTableChangeListener#signature",
+    "title": "PgTableChangeListener",
+    "heading": "Signature",
+    "content": "process(changes: PgTableChanges<TRow>, ctx: PgTableChangeContext<TToken>): Promise<void>"
+  },
+  {
+    "slug": "/docs/api/interfaces/PgTableChangeListener#parameters",
+    "title": "PgTableChangeListener",
+    "heading": "Parameters",
+    "content": "changes (PgTableChanges<TRow>) - The batch of changes for the table. ctx (PgTableChangeContext<TToken>) - Context with error handling and optional transaction token."
+  },
+  {
+    "slug": "/docs/api/interfaces/PgTableChangeListener#returns",
+    "title": "PgTableChangeListener",
+    "heading": "Returns",
+    "content": "Promise<void>"
+  },
+  {
+    "slug": "/docs/api/interfaces/PoolConfig",
+    "title": "PoolConfig",
+    "content": "interface Configuration for the dedicated PG connection pool."
+  },
+  {
+    "slug": "/docs/api/interfaces/PoolConfig#properties",
+    "title": "PoolConfig",
+    "heading": "Properties",
+    "content": "Name Type Description --- --- --- max? number Maximum number of connections in the dedicated pool."
+  },
+  {
+    "slug": "/docs/api/interfaces/QueueConfig",
+    "title": "QueueConfig",
+    "content": "interface Queue processing configuration"
+  },
+  {
+    "slug": "/docs/api/interfaces/QueueConfig#properties",
+    "title": "QueueConfig",
+    "heading": "Properties",
+    "content": "Name Type Description --- --- --- batchSize? number Maximum number of messages to fetch per pull cycle. cleanupInterval? number Interval in milliseconds to clean up old processed messages concurrency? number Maximum number of listener executions running in parallel. drainInterval? number Delay in milliseconds between drain loop iterations. maxRetries? number Maximum number of retries for a failed message messageTTL? number Time-to-live for messages in milliseconds processingTimeout? number Timeout in milliseconds after which a 'processing' message is considered orphaned. schema? string Name of the queue schema table? string Name of the queue table"
+  },
+  {
+    "slug": "/docs/api/interfaces/QueuedMessage",
+    "title": "QueuedMessage",
+    "content": "interface Representation of a message in the queue"
+  },
+  {
+    "slug": "/docs/api/interfaces/QueuedMessage#properties",
+    "title": "QueuedMessage",
+    "heading": "Properties",
+    "content": "Name Type Description --- --- --- channel string createdat Date id number nextretryat Date null payload T processedat Date null retrycount number status MessageStatus"
+  },
+  {
+    "slug": "/docs/api/interfaces/ResolvedListener",
+    "title": "ResolvedListener",
+    "content": "interface A discovered listener with its resolved metadata."
+  },
+  {
+    "slug": "/docs/api/interfaces/ResolvedListener#properties",
+    "title": "ResolvedListener",
+    "heading": "Properties",
+    "content": "Name Type Description --- --- --- instance PgTableChangeListener<TRow> transactional boolean"
+  },
+  {
+    "slug": "/docs/api/interfaces/TableListener",
+    "title": "TableListener",
+    "content": "interface Describes a table and the events/fields a listener is interested in."
+  },
+  {
+    "slug": "/docs/api/interfaces/TableListener#properties",
+    "title": "TableListener",
+    "heading": "Properties",
+    "content": "Name Type Description --- --- --- events? (\"INSERT\" \"DELETE\" \"UPDATE\")[] payloadFields? string[] schema string table string"
+  },
+  {
+    "slug": "/docs/api/interfaces/TransactionAdapter",
+    "title": "TransactionAdapter",
+    "content": "interface ORM-agnostic adapter for running listener logic inside a transaction. TToken is opaque to the library (e.g. EntityManager for TypeORM, PrismaClient for Prisma)."
+  },
+  {
+    "slug": "/docs/api/interfaces/TransactionAdapter#run",
+    "title": "TransactionAdapter",
+    "heading": "`run()`",
+    "content": ""
+  },
+  {
+    "slug": "/docs/api/interfaces/TransactionAdapter#signature",
+    "title": "TransactionAdapter",
+    "heading": "Signature",
+    "content": "run(callback: (token: TToken) => Promise<T>): Promise<T>"
+  },
+  {
+    "slug": "/docs/api/interfaces/TransactionAdapter#parameters",
+    "title": "TransactionAdapter",
+    "heading": "Parameters",
+    "content": "callback ((token: TToken) => Promise<T>)"
+  },
+  {
+    "slug": "/docs/api/interfaces/TransactionAdapter#returns",
+    "title": "TransactionAdapter",
+    "heading": "Returns",
+    "content": "Promise<T>"
+  },
+  {
+    "slug": "/docs/api/interfaces/TriggerMetadata",
+    "title": "TriggerMetadata",
+    "content": "interface Metadata describing a PostgreSQL trigger."
+  },
+  {
+    "slug": "/docs/api/interfaces/TriggerMetadata#properties",
+    "title": "TriggerMetadata",
+    "heading": "Properties",
+    "content": "Name Type Description --- --- --- events? (\"INSERT\" \"DELETE\" \"UPDATE\")[] hash? string name string payloadFields? string[] schema string table string"
+  },
+  {
+    "slug": "/docs/api/type-aliases/DiscoveredPgTableChangeListener",
+    "title": "DiscoveredPgTableChangeListener",
+    "content": "type Type representing a class discovered with metadata @RegisterPgTableChangeListener for a PostgreSQL table change listener. type DiscoveredPgTableChangeListener = DiscoveredClassWithMeta<RegisterPgTableChangeListenerMetadata>"
+  },
+  {
+    "slug": "/docs/api/type-aliases/ExpandableParams",
+    "title": "ExpandableParams",
+    "content": "type Represents parameters for making a controller/expander response expandable. type ExpandableParams = unknown"
+  },
+  {
+    "slug": "/docs/api/type-aliases/ExpandConfig",
+    "title": "ExpandConfig",
+    "content": "type Represents configuration for the ExpandModule. type ExpandConfig = unknown"
+  },
+  {
+    "slug": "/docs/api/type-aliases/ExpandContext",
+    "title": "ExpandContext",
+    "content": "type Represents the context in which an expansion is performed. type ExpandContext = unknown"
+  },
+  {
+    "slug": "/docs/api/type-aliases/ExpanderMethodsParams",
+    "title": "ExpanderMethodsParams",
+    "content": "type Parameters for the type ExpanderMethodsParams = object"
+  },
+  {
+    "slug": "/docs/api/type-aliases/ExpandErrorPolicy",
+    "title": "ExpandErrorPolicy",
+    "content": "type Error policy for expansion errors. 'ignore': Ignore errors and continue with the expansion (default) 'include': Include error details in the response 'throw': Throw the error and interrupt the entire request type ExpandErrorPolicy = \"ignore\" \"include\" \"throw\""
+  },
+  {
+    "slug": "/docs/api/type-aliases/ExpansionError",
+    "title": "ExpansionError",
+    "content": "type Represents error metadata for failed expansions. type ExpansionError = unknown"
+  },
+  {
+    "slug": "/docs/api/type-aliases/ExpansionErrorFormatter",
+    "title": "ExpansionErrorFormatter",
+    "content": "type Format function for expansion errors. type ExpansionErrorFormatter = (error: Error, path: string) => Partial<ExpansionError>"
+  },
+  {
+    "slug": "/docs/api/type-aliases/ExpansionErrorHandlingConfig",
+    "title": "ExpansionErrorHandlingConfig",
+    "content": "type Error handling configuration for expansions. type ExpansionErrorHandlingConfig = unknown"
+  },
+  {
+    "slug": "/docs/api/type-aliases/PgPubSubConfig",
+    "title": "PgPubSubConfig",
+    "content": "type Configuration for the PostgreSQL pubsub module. type PgPubSubConfig = unknown"
+  },
+  {
+    "slug": "/docs/api/type-aliases/PgTableChangeErrorHandler",
+    "title": "PgTableChangeErrorHandler",
+    "content": "type Type for a callback to handle errors when processing a change. type PgTableChangeErrorHandler = (ids: number[]) => void"
+  },
+  {
+    "slug": "/docs/api/type-aliases/PgTableChangePayload",
+    "title": "PgTableChangePayload",
+    "content": "type Type for a PostgreSQL table change payload. type PgTableChangePayload = PgTableInsertPayload<TRow> PgTableDeletePayload<TRow> PgTableUpdatePayload<TRow>"
+  },
+  {
+    "slug": "/docs/api/type-aliases/PgTableChanges",
+    "title": "PgTableChanges",
+    "content": "type Type for a batch of changes received for a PostgreSQL table. type PgTableChanges = unknown"
+  },
+  {
+    "slug": "/docs/api/type-aliases/PgTableChangeType",
+    "title": "PgTableChangeType",
+    "content": "type Type for a PostgreSQL table change type. type PgTableChangeType = PgTableChangePayload[\"event\"]"
+  },
+  {
+    "slug": "/docs/api/type-aliases/PgTableDeletePayload",
+    "title": "PgTableDeletePayload",
+    "content": "type Type for a PostgreSQL table DELETE payload. type PgTableDeletePayload = unknown"
+  },
+  {
+    "slug": "/docs/api/type-aliases/PgTableInsertPayload",
+    "title": "PgTableInsertPayload",
+    "content": "type Type for a PostgreSQL table INSERT payload. type PgTableInsertPayload = unknown"
+  },
+  {
+    "slug": "/docs/api/type-aliases/PgTableUpdatePayload",
+    "title": "PgTableUpdatePayload",
+    "content": "type Type for a PostgreSQL table UPDATE payload. type PgTableUpdatePayload = unknown"
+  },
+  {
+    "slug": "/docs/api/type-aliases/RegisterPgTableChangeListenerMetadata",
+    "title": "RegisterPgTableChangeListenerMetadata",
+    "content": "type type RegisterPgTableChangeListenerMetadata = unknown"
+  },
+  {
+    "slug": "/docs/api/type-aliases/ReusableExpandMethod",
+    "title": "ReusableExpandMethod",
+    "content": "type Represents a method within a type ReusableExpandMethod = (args: any[]) => Promise<unknown>"
+  },
+  {
+    "slug": "/docs/api/type-aliases/SelectableParams",
+    "title": "SelectableParams",
+    "content": "type Represents parameters for making a controller response selectable. type SelectableParams = unknown"
+  },
+  {
+    "slug": "/docs/api/type-aliases/StandardExpandMethod",
+    "title": "StandardExpandMethod",
+    "content": "type Represents a standard method on an type StandardExpandMethod = (context: ExpandContext) => Promise<unknown>"
+  },
+  {
+    "slug": "/docs/api/type-aliases/UseExpansionMethodConfig",
+    "title": "UseExpansionMethodConfig",
+    "content": "type Configuration for the type UseExpansionMethodConfig = unknown"
+  },
+  {
+    "slug": "/docs/api/type-aliases/UseExpansionMethodMetadata",
+    "title": "UseExpansionMethodMetadata",
+    "content": "type Metadata stored by the type UseExpansionMethodMetadata = UseExpansionMethodConfig<TParentResource, TReusableExpander>"
+  },
+  {
+    "slug": "/docs/api/variables/DEFAULT_EXPAND_CONFIG",
+    "title": "DEFAULT_EXPAND_CONFIG",
+    "content": "const const DEFAULTEXPANDCONFIG: Required<ExpandConfig>"
+  },
+  {
+    "slug": "/docs/api/variables/EXPAND_CONFIG",
+    "title": "EXPAND_CONFIG",
+    "content": "const Injection token for the ExpandConfig. const EXPANDCONFIG: typeof EXPANDCONFIG"
+  },
+  {
+    "slug": "/docs/api/variables/EXPANDABLE_KEY",
+    "title": "EXPANDABLE_KEY",
+    "content": "const Symbol key for metadata associated with expandable parameters on controller/expander methods. const EXPANDABLEKEY: typeof EXPANDABLEKEY"
+  },
+  {
+    "slug": "/docs/api/variables/EXPANDER_KEY",
+    "title": "EXPANDER_KEY",
+    "content": "const Symbol key for metadata associated with expanders. const EXPANDERKEY: typeof EXPANDERKEY"
+  },
+  {
+    "slug": "/docs/api/variables/EXPANDER_METHODS_KEY",
+    "title": "EXPANDER_METHODS_KEY",
+    "content": "const Symbol key for metadata associated with classes containing reusable expander methods. const EXPANDERMETHODSKEY: typeof EXPANDERMETHODSKEY"
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_CONFIG",
+    "title": "PG_PUBSUB_CONFIG",
+    "content": "const Symbol for the configuration of the PostgreSQL pubsub module. const PGPUBSUBCONFIG: typeof PGPUBSUBCONFIG"
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_DRAIN_INTERVAL",
+    "title": "PG_PUBSUB_DRAIN_INTERVAL",
+    "content": "const Default delay in milliseconds between drain loop iterations. Gives the database breathing room under high message volume. const PGPUBSUBDRAININTERVAL: 50"
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_FALLBACK_POLLING_INTERVAL",
+    "title": "PG_PUBSUB_FALLBACK_POLLING_INTERVAL",
+    "content": "const Default fallback polling interval in milliseconds. const PGPUBSUBFALLBACKPOLLINGINTERVAL: 60000"
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_LOCK_DURATION",
+    "title": "PG_PUBSUB_LOCK_DURATION",
+    "content": "const Default advisory lock duration in milliseconds. const PGPUBSUBLOCKDURATION: 5000"
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_POOL_MAX",
+    "title": "PG_PUBSUB_POOL_MAX",
+    "content": "const Default maximum number of connections in the dedicated pool. const PGPUBSUBPOOLMAX: 5"
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_QUEUE_BATCH_SIZE",
+    "title": "PG_PUBSUB_QUEUE_BATCH_SIZE",
+    "content": "const Default batch size for fetching pending messages. const PGPUBSUBQUEUEBATCHSIZE: 100"
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_QUEUE_CLEANUP_INTERVAL",
+    "title": "PG_PUBSUB_QUEUE_CLEANUP_INTERVAL",
+    "content": "const Default cleanup interval in milliseconds. const PGPUBSUBQUEUECLEANUPINTERVAL: number"
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_QUEUE_CONCURRENCY",
+    "title": "PG_PUBSUB_QUEUE_CONCURRENCY",
+    "content": "const Default maximum number of concurrent listener executions. const PGPUBSUBQUEUECONCURRENCY: 5"
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_QUEUE_MAX_RETRIES",
+    "title": "PG_PUBSUB_QUEUE_MAX_RETRIES",
+    "content": "const Default max retries for a failed message. const PGPUBSUBQUEUEMAXRETRIES: 5"
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_QUEUE_MESSAGE_TTL",
+    "title": "PG_PUBSUB_QUEUE_MESSAGE_TTL",
+    "content": "const Default message TTL in milliseconds. const PGPUBSUBQUEUEMESSAGETTL: number"
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_QUEUE_PROCESSING_TIMEOUT",
+    "title": "PG_PUBSUB_QUEUE_PROCESSING_TIMEOUT",
+    "content": "const Default processing timeout in milliseconds. Messages stuck in 'processing' longer than this are considered orphaned. const PGPUBSUBQUEUEPROCESSINGTIMEOUT: number"
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_QUEUE_SCHEMA",
+    "title": "PG_PUBSUB_QUEUE_SCHEMA",
+    "content": "const Default queue schema. const PGPUBSUBQUEUESCHEMA: \"public\""
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_QUEUE_TABLE",
+    "title": "PG_PUBSUB_QUEUE_TABLE",
+    "content": "const Default queue table name. const PGPUBSUBQUEUETABLE: \"pgpubsubqueue\""
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_TRIGGER_NAME",
+    "title": "PG_PUBSUB_TRIGGER_NAME",
+    "content": "const Trigger channel name and prefix for created triggers. const PGPUBSUBTRIGGERNAME: \"pubsubtrigger\""
+  },
+  {
+    "slug": "/docs/api/variables/PG_PUBSUB_TRIGGER_SCHEMA",
+    "title": "PG_PUBSUB_TRIGGER_SCHEMA",
+    "content": "const Default schema for tables and triggers. const PGPUBSUBTRIGGERSCHEMA: \"public\""
+  },
+  {
+    "slug": "/docs/api/variables/RegisterPgTableChangeListenerMeta",
+    "title": "RegisterPgTableChangeListenerMeta",
+    "content": "const Symbol for the metadata key used to register a PostgreSQL table change listener. const RegisterPgTableChangeListenerMeta: typeof RegisterPgTableChangeListenerMeta"
+  },
+  {
+    "slug": "/docs/api/variables/SELECTABLE_KEY",
+    "title": "SELECTABLE_KEY",
+    "content": "const Symbol key for metadata associated with selectable parameters. const SELECTABLEKEY: typeof SELECTABLEKEY"
+  },
+  {
+    "slug": "/docs/api/variables/USE_EXPANSION_METHOD_KEY",
+    "title": "USE_EXPANSION_METHOD_KEY",
+    "content": "const Symbol key for metadata associated with linking reusable expander methods. const USEEXPANSIONMETHODKEY: typeof USEEXPANSIONMETHODKEY"
+  }
+]

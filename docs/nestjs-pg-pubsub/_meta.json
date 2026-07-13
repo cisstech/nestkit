@@ -1,0 +1,7 @@
+{
+  "getting-started": { "title": "Getting Started" },
+  "installation": { "title": "Installation" },
+  "usage": { "title": "Usage" },
+  "advanced-usage": { "title": "Advanced Usage" },
+  "sample-application": { "title": "Sample Application" }
+}

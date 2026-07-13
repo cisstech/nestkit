@@ -1,0 +1,14 @@
+{
+  "NestKitExpandModule": {
+    "title": "NestKitExpandModule"
+  },
+  "PgLockService": {
+    "title": "PgLockService"
+  },
+  "PgPubSubModule": {
+    "title": "PgPubSubModule"
+  },
+  "PgPubSubService": {
+    "title": "PgPubSubService"
+  }
+}

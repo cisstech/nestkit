@@ -1,0 +1,83 @@
+# NestKit
+
+## Documentation
+
+- [Introduction](https://cisstech.github.io/nestkit/docs/overview/introduction): NestKit is a collection of focused modules for NestJS developers.
+- [Getting Started](https://cisstech.github.io/nestkit/docs/nestjs-expand/getting-started)
+- [Installation](https://cisstech.github.io/nestkit/docs/nestjs-expand/installation)
+- [Usage](https://cisstech.github.io/nestkit/docs/nestjs-expand/usage)
+- [Advanced Usage](https://cisstech.github.io/nestkit/docs/nestjs-expand/advanced-usage)
+- [Error Handling](https://cisstech.github.io/nestkit/docs/nestjs-expand/error-handling)
+- [Getting Started](https://cisstech.github.io/nestkit/docs/nestjs-pg-pubsub/getting-started)
+- [Installation](https://cisstech.github.io/nestkit/docs/nestjs-pg-pubsub/installation)
+- [Usage](https://cisstech.github.io/nestkit/docs/nestjs-pg-pubsub/usage)
+- [Advanced Usage](https://cisstech.github.io/nestkit/docs/nestjs-pg-pubsub/advanced-usage)
+- [Sample Application](https://cisstech.github.io/nestkit/docs/nestjs-pg-pubsub/sample-application)
+- [API](https://cisstech.github.io/nestkit/docs/api)
+- [Expandable](https://cisstech.github.io/nestkit/docs/api/functions/Expandable): Decorator controller/expander method as expandable (for recursive expansion).
+- [Expander](https://cisstech.github.io/nestkit/docs/api/functions/Expander): Decorator function to mark a class as a standard expander for a specific DTO.
+- [ExpanderMethods](https://cisstech.github.io/nestkit/docs/api/functions/ExpanderMethods): Decorator function to mark a class as containing reusable expansion methods.
+- [RegisterPgTableChangeListener](https://cisstech.github.io/nestkit/docs/api/functions/RegisterPgTableChangeListener): Decorator to register a PostgreSQL table change listener.
+- [Selectable](https://cisstech.github.io/nestkit/docs/api/functions/Selectable): Decorator function to mark a controller endpoint response as selectable.
+- [UseExpansionMethod](https://cisstech.github.io/nestkit/docs/api/functions/UseExpansionMethod): Decorator function to link a field in an
+- [NestKitExpandModule](https://cisstech.github.io/nestkit/docs/api/classes/NestKitExpandModule)
+- [PgLockService](https://cisstech.github.io/nestkit/docs/api/classes/PgLockService): PostgreSQL advisory lock service.
+- [PgPubSubModule](https://cisstech.github.io/nestkit/docs/api/classes/PgPubSubModule)
+- [PgPubSubService](https://cisstech.github.io/nestkit/docs/api/classes/PgPubSubService): Subscribes to PostgreSQL pub/sub triggers and handles table changes.
+- [ListenerDiscovery](https://cisstech.github.io/nestkit/docs/api/interfaces/ListenerDiscovery): Result of discovering and processing table change listeners.
+- [LockOptions](https://cisstech.github.io/nestkit/docs/api/interfaces/LockOptions): Options for acquiring an advisory lock.
+- [PgTableChangeContext](https://cisstech.github.io/nestkit/docs/api/interfaces/PgTableChangeContext): Context passed to a listener's `process` method.
+- [PgTableChangeListener](https://cisstech.github.io/nestkit/docs/api/interfaces/PgTableChangeListener): Type for a handler that listens to changes on a PostgreSQL table.
+- [PoolConfig](https://cisstech.github.io/nestkit/docs/api/interfaces/PoolConfig): Configuration for the dedicated PG connection pool.
+- [QueueConfig](https://cisstech.github.io/nestkit/docs/api/interfaces/QueueConfig): Queue processing configuration
+- [QueuedMessage](https://cisstech.github.io/nestkit/docs/api/interfaces/QueuedMessage): Representation of a message in the queue
+- [ResolvedListener](https://cisstech.github.io/nestkit/docs/api/interfaces/ResolvedListener): A discovered listener with its resolved metadata.
+- [TableListener](https://cisstech.github.io/nestkit/docs/api/interfaces/TableListener): Describes a table and the events/fields a listener is interested in.
+- [TransactionAdapter](https://cisstech.github.io/nestkit/docs/api/interfaces/TransactionAdapter): ORM-agnostic adapter for running listener logic inside a transaction.
+- [TriggerMetadata](https://cisstech.github.io/nestkit/docs/api/interfaces/TriggerMetadata): Metadata describing a PostgreSQL trigger.
+- [DiscoveredPgTableChangeListener](https://cisstech.github.io/nestkit/docs/api/type-aliases/DiscoveredPgTableChangeListener): Type representing a class discovered with metadata `@RegisterPgTableChangeListener`
+- [ExpandableParams](https://cisstech.github.io/nestkit/docs/api/type-aliases/ExpandableParams): Represents parameters for making a controller/expander response expandable.
+- [ExpandConfig](https://cisstech.github.io/nestkit/docs/api/type-aliases/ExpandConfig): Represents configuration for the ExpandModule.
+- [ExpandContext](https://cisstech.github.io/nestkit/docs/api/type-aliases/ExpandContext): Represents the context in which an expansion is performed.
+- [ExpanderMethodsParams](https://cisstech.github.io/nestkit/docs/api/type-aliases/ExpanderMethodsParams): Parameters for the
+- [ExpandErrorPolicy](https://cisstech.github.io/nestkit/docs/api/type-aliases/ExpandErrorPolicy): Error policy for expansion errors.
+- [ExpansionError](https://cisstech.github.io/nestkit/docs/api/type-aliases/ExpansionError): Represents error metadata for failed expansions.
+- [ExpansionErrorFormatter](https://cisstech.github.io/nestkit/docs/api/type-aliases/ExpansionErrorFormatter): Format function for expansion errors.
+- [ExpansionErrorHandlingConfig](https://cisstech.github.io/nestkit/docs/api/type-aliases/ExpansionErrorHandlingConfig): Error handling configuration for expansions.
+- [PgPubSubConfig](https://cisstech.github.io/nestkit/docs/api/type-aliases/PgPubSubConfig): Configuration for the PostgreSQL pubsub module.
+- [PgTableChangeErrorHandler](https://cisstech.github.io/nestkit/docs/api/type-aliases/PgTableChangeErrorHandler): Type for a callback to handle errors when processing a change.
+- [PgTableChangePayload](https://cisstech.github.io/nestkit/docs/api/type-aliases/PgTableChangePayload): Type for a PostgreSQL table change payload.
+- [PgTableChanges](https://cisstech.github.io/nestkit/docs/api/type-aliases/PgTableChanges): Type for a batch of changes received for a PostgreSQL table.
+- [PgTableChangeType](https://cisstech.github.io/nestkit/docs/api/type-aliases/PgTableChangeType): Type for a PostgreSQL table change type.
+- [PgTableDeletePayload](https://cisstech.github.io/nestkit/docs/api/type-aliases/PgTableDeletePayload): Type for a PostgreSQL table DELETE payload.
+- [PgTableInsertPayload](https://cisstech.github.io/nestkit/docs/api/type-aliases/PgTableInsertPayload): Type for a PostgreSQL table INSERT payload.
+- [PgTableUpdatePayload](https://cisstech.github.io/nestkit/docs/api/type-aliases/PgTableUpdatePayload): Type for a PostgreSQL table UPDATE payload.
+- [RegisterPgTableChangeListenerMetadata](https://cisstech.github.io/nestkit/docs/api/type-aliases/RegisterPgTableChangeListenerMetadata)
+- [ReusableExpandMethod](https://cisstech.github.io/nestkit/docs/api/type-aliases/ReusableExpandMethod): Represents a method within a
+- [SelectableParams](https://cisstech.github.io/nestkit/docs/api/type-aliases/SelectableParams): Represents parameters for making a controller response selectable.
+- [StandardExpandMethod](https://cisstech.github.io/nestkit/docs/api/type-aliases/StandardExpandMethod): Represents a standard method on an
+- [UseExpansionMethodConfig](https://cisstech.github.io/nestkit/docs/api/type-aliases/UseExpansionMethodConfig): Configuration for the
+- [UseExpansionMethodMetadata](https://cisstech.github.io/nestkit/docs/api/type-aliases/UseExpansionMethodMetadata): Metadata stored by the
+- [DEFAULT_EXPAND_CONFIG](https://cisstech.github.io/nestkit/docs/api/variables/DEFAULT_EXPAND_CONFIG)
+- [EXPAND_CONFIG](https://cisstech.github.io/nestkit/docs/api/variables/EXPAND_CONFIG): Injection token for the ExpandConfig.
+- [EXPANDABLE_KEY](https://cisstech.github.io/nestkit/docs/api/variables/EXPANDABLE_KEY): Symbol key for metadata associated with expandable parameters on controller/expander methods.
+- [EXPANDER_KEY](https://cisstech.github.io/nestkit/docs/api/variables/EXPANDER_KEY): Symbol key for metadata associated with expanders.
+- [EXPANDER_METHODS_KEY](https://cisstech.github.io/nestkit/docs/api/variables/EXPANDER_METHODS_KEY): Symbol key for metadata associated with classes containing reusable expander methods.
+- [PG_PUBSUB_CONFIG](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_CONFIG): Symbol for the configuration of the PostgreSQL pubsub module.
+- [PG_PUBSUB_DRAIN_INTERVAL](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_DRAIN_INTERVAL): Default delay in milliseconds between drain loop iterations.
+- [PG_PUBSUB_FALLBACK_POLLING_INTERVAL](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_FALLBACK_POLLING_INTERVAL): Default fallback polling interval in milliseconds.
+- [PG_PUBSUB_LOCK_DURATION](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_LOCK_DURATION): Default advisory lock duration in milliseconds.
+- [PG_PUBSUB_POOL_MAX](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_POOL_MAX): Default maximum number of connections in the dedicated pool.
+- [PG_PUBSUB_QUEUE_BATCH_SIZE](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_QUEUE_BATCH_SIZE): Default batch size for fetching pending messages.
+- [PG_PUBSUB_QUEUE_CLEANUP_INTERVAL](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_QUEUE_CLEANUP_INTERVAL): Default cleanup interval in milliseconds.
+- [PG_PUBSUB_QUEUE_CONCURRENCY](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_QUEUE_CONCURRENCY): Default maximum number of concurrent listener executions.
+- [PG_PUBSUB_QUEUE_MAX_RETRIES](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_QUEUE_MAX_RETRIES): Default max retries for a failed message.
+- [PG_PUBSUB_QUEUE_MESSAGE_TTL](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_QUEUE_MESSAGE_TTL): Default message TTL in milliseconds.
+- [PG_PUBSUB_QUEUE_PROCESSING_TIMEOUT](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_QUEUE_PROCESSING_TIMEOUT): Default processing timeout in milliseconds.
+- [PG_PUBSUB_QUEUE_SCHEMA](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_QUEUE_SCHEMA): Default queue schema.
+- [PG_PUBSUB_QUEUE_TABLE](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_QUEUE_TABLE): Default queue table name.
+- [PG_PUBSUB_TRIGGER_NAME](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_TRIGGER_NAME): Trigger channel name and prefix for created triggers.
+- [PG_PUBSUB_TRIGGER_SCHEMA](https://cisstech.github.io/nestkit/docs/api/variables/PG_PUBSUB_TRIGGER_SCHEMA): Default schema for tables and triggers.
+- [RegisterPgTableChangeListenerMeta](https://cisstech.github.io/nestkit/docs/api/variables/RegisterPgTableChangeListenerMeta): Symbol for the metadata key used to register a PostgreSQL table change listener.
+- [SELECTABLE_KEY](https://cisstech.github.io/nestkit/docs/api/variables/SELECTABLE_KEY): Symbol key for metadata associated with selectable parameters.
+- [USE_EXPANSION_METHOD_KEY](https://cisstech.github.io/nestkit/docs/api/variables/USE_EXPANSION_METHOD_KEY): Symbol key for metadata associated with linking reusable expander methods.

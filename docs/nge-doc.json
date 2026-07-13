@@ -1,0 +1,608 @@
+{
+  "meta": {
+    "name": "NestKit",
+    "root": "/docs",
+    "nav": "tabs"
+  },
+  "pages": [
+    {
+      "title": "Overview",
+      "href": "/docs/overview",
+      "children": [
+        {
+          "title": "Introduction",
+          "href": "/docs/overview/introduction",
+          "renderer": "docs/overview/introduction.md",
+          "description": "NestKit is a collection of focused modules for NestJS developers.",
+          "sourcePath": "overview/introduction.md",
+          "lastUpdated": "2026-07-13T21:31:44+02:00"
+        }
+      ]
+    },
+    {
+      "title": "@nestjs-expand",
+      "href": "/docs/nestjs-expand",
+      "children": [
+        {
+          "title": "Getting Started",
+          "href": "/docs/nestjs-expand/getting-started",
+          "renderer": "docs/nestjs-expand/getting-started.md",
+          "sourcePath": "nestjs-expand/getting-started.md",
+          "lastUpdated": "2026-07-13T21:31:44+02:00"
+        },
+        {
+          "title": "Installation",
+          "href": "/docs/nestjs-expand/installation",
+          "renderer": "docs/nestjs-expand/installation.md",
+          "sourcePath": "nestjs-expand/installation.md",
+          "lastUpdated": "2026-07-13T21:31:44+02:00"
+        },
+        {
+          "title": "Usage",
+          "href": "/docs/nestjs-expand/usage",
+          "renderer": "docs/nestjs-expand/usage.md",
+          "sourcePath": "nestjs-expand/usage.md",
+          "lastUpdated": "2026-07-13T21:31:44+02:00"
+        },
+        {
+          "title": "Advanced Usage",
+          "href": "/docs/nestjs-expand/advanced-usage",
+          "renderer": "docs/nestjs-expand/advanced-usage.md",
+          "sourcePath": "nestjs-expand/advanced-usage.md",
+          "lastUpdated": "2026-07-13T21:31:44+02:00"
+        },
+        {
+          "title": "Error Handling",
+          "href": "/docs/nestjs-expand/error-handling",
+          "renderer": "docs/nestjs-expand/error-handling.md",
+          "sourcePath": "nestjs-expand/error-handling.md",
+          "lastUpdated": "2026-07-13T21:31:44+02:00"
+        }
+      ]
+    },
+    {
+      "title": "@nestjs-pg-pubsub",
+      "href": "/docs/nestjs-pg-pubsub",
+      "children": [
+        {
+          "title": "Getting Started",
+          "href": "/docs/nestjs-pg-pubsub/getting-started",
+          "renderer": "docs/nestjs-pg-pubsub/getting-started.md",
+          "sourcePath": "nestjs-pg-pubsub/getting-started.md",
+          "lastUpdated": "2026-07-13T21:31:44+02:00"
+        },
+        {
+          "title": "Installation",
+          "href": "/docs/nestjs-pg-pubsub/installation",
+          "renderer": "docs/nestjs-pg-pubsub/installation.md",
+          "sourcePath": "nestjs-pg-pubsub/installation.md",
+          "lastUpdated": "2026-07-13T21:31:44+02:00"
+        },
+        {
+          "title": "Usage",
+          "href": "/docs/nestjs-pg-pubsub/usage",
+          "renderer": "docs/nestjs-pg-pubsub/usage.md",
+          "sourcePath": "nestjs-pg-pubsub/usage.md",
+          "lastUpdated": "2026-07-13T21:31:44+02:00"
+        },
+        {
+          "title": "Advanced Usage",
+          "href": "/docs/nestjs-pg-pubsub/advanced-usage",
+          "renderer": "docs/nestjs-pg-pubsub/advanced-usage.md",
+          "sourcePath": "nestjs-pg-pubsub/advanced-usage.md",
+          "lastUpdated": "2026-07-13T21:31:44+02:00"
+        },
+        {
+          "title": "Sample Application",
+          "href": "/docs/nestjs-pg-pubsub/sample-application",
+          "renderer": "docs/nestjs-pg-pubsub/sample-application.md",
+          "sourcePath": "nestjs-pg-pubsub/sample-application.md",
+          "lastUpdated": "2026-07-13T21:31:44+02:00"
+        }
+      ]
+    },
+    {
+      "title": "API",
+      "href": "/docs/api",
+      "renderer": "docs/api/index.md",
+      "children": [
+        {
+          "title": "Functions",
+          "href": "/docs/api/functions",
+          "children": [
+            {
+              "title": "Expandable",
+              "href": "/docs/api/functions/Expandable",
+              "renderer": "docs/api/functions/Expandable.md",
+              "description": "Decorator controller/expander method as expandable (for recursive expansion).",
+              "sourcePath": "api/functions/Expandable.md"
+            },
+            {
+              "title": "Expander",
+              "href": "/docs/api/functions/Expander",
+              "renderer": "docs/api/functions/Expander.md",
+              "description": "Decorator function to mark a class as a standard expander for a specific DTO.",
+              "sourcePath": "api/functions/Expander.md"
+            },
+            {
+              "title": "ExpanderMethods",
+              "href": "/docs/api/functions/ExpanderMethods",
+              "renderer": "docs/api/functions/ExpanderMethods.md",
+              "description": "Decorator function to mark a class as containing reusable expansion methods.",
+              "sourcePath": "api/functions/ExpanderMethods.md"
+            },
+            {
+              "title": "RegisterPgTableChangeListener",
+              "href": "/docs/api/functions/RegisterPgTableChangeListener",
+              "renderer": "docs/api/functions/RegisterPgTableChangeListener.md",
+              "description": "Decorator to register a PostgreSQL table change listener.",
+              "sourcePath": "api/functions/RegisterPgTableChangeListener.md"
+            },
+            {
+              "title": "Selectable",
+              "href": "/docs/api/functions/Selectable",
+              "renderer": "docs/api/functions/Selectable.md",
+              "description": "Decorator function to mark a controller endpoint response as selectable.",
+              "sourcePath": "api/functions/Selectable.md"
+            },
+            {
+              "title": "UseExpansionMethod",
+              "href": "/docs/api/functions/UseExpansionMethod",
+              "renderer": "docs/api/functions/UseExpansionMethod.md",
+              "description": "Decorator function to link a field in an",
+              "sourcePath": "api/functions/UseExpansionMethod.md"
+            }
+          ]
+        },
+        {
+          "title": "Classes",
+          "href": "/docs/api/classes",
+          "children": [
+            {
+              "title": "NestKitExpandModule",
+              "href": "/docs/api/classes/NestKitExpandModule",
+              "renderer": "docs/api/classes/NestKitExpandModule.md",
+              "sourcePath": "api/classes/NestKitExpandModule.md"
+            },
+            {
+              "title": "PgLockService",
+              "href": "/docs/api/classes/PgLockService",
+              "renderer": "docs/api/classes/PgLockService.md",
+              "description": "PostgreSQL advisory lock service.",
+              "sourcePath": "api/classes/PgLockService.md"
+            },
+            {
+              "title": "PgPubSubModule",
+              "href": "/docs/api/classes/PgPubSubModule",
+              "renderer": "docs/api/classes/PgPubSubModule.md",
+              "sourcePath": "api/classes/PgPubSubModule.md"
+            },
+            {
+              "title": "PgPubSubService",
+              "href": "/docs/api/classes/PgPubSubService",
+              "renderer": "docs/api/classes/PgPubSubService.md",
+              "description": "Subscribes to PostgreSQL pub/sub triggers and handles table changes.",
+              "sourcePath": "api/classes/PgPubSubService.md"
+            }
+          ]
+        },
+        {
+          "title": "Interfaces",
+          "href": "/docs/api/interfaces",
+          "children": [
+            {
+              "title": "ListenerDiscovery",
+              "href": "/docs/api/interfaces/ListenerDiscovery",
+              "renderer": "docs/api/interfaces/ListenerDiscovery.md",
+              "description": "Result of discovering and processing table change listeners.",
+              "sourcePath": "api/interfaces/ListenerDiscovery.md"
+            },
+            {
+              "title": "LockOptions",
+              "href": "/docs/api/interfaces/LockOptions",
+              "renderer": "docs/api/interfaces/LockOptions.md",
+              "description": "Options for acquiring an advisory lock.",
+              "sourcePath": "api/interfaces/LockOptions.md"
+            },
+            {
+              "title": "PgTableChangeContext",
+              "href": "/docs/api/interfaces/PgTableChangeContext",
+              "renderer": "docs/api/interfaces/PgTableChangeContext.md",
+              "description": "Context passed to a listener's `process` method.",
+              "sourcePath": "api/interfaces/PgTableChangeContext.md"
+            },
+            {
+              "title": "PgTableChangeListener",
+              "href": "/docs/api/interfaces/PgTableChangeListener",
+              "renderer": "docs/api/interfaces/PgTableChangeListener.md",
+              "description": "Type for a handler that listens to changes on a PostgreSQL table.",
+              "sourcePath": "api/interfaces/PgTableChangeListener.md"
+            },
+            {
+              "title": "PoolConfig",
+              "href": "/docs/api/interfaces/PoolConfig",
+              "renderer": "docs/api/interfaces/PoolConfig.md",
+              "description": "Configuration for the dedicated PG connection pool.",
+              "sourcePath": "api/interfaces/PoolConfig.md"
+            },
+            {
+              "title": "QueueConfig",
+              "href": "/docs/api/interfaces/QueueConfig",
+              "renderer": "docs/api/interfaces/QueueConfig.md",
+              "description": "Queue processing configuration",
+              "sourcePath": "api/interfaces/QueueConfig.md"
+            },
+            {
+              "title": "QueuedMessage",
+              "href": "/docs/api/interfaces/QueuedMessage",
+              "renderer": "docs/api/interfaces/QueuedMessage.md",
+              "description": "Representation of a message in the queue",
+              "sourcePath": "api/interfaces/QueuedMessage.md"
+            },
+            {
+              "title": "ResolvedListener",
+              "href": "/docs/api/interfaces/ResolvedListener",
+              "renderer": "docs/api/interfaces/ResolvedListener.md",
+              "description": "A discovered listener with its resolved metadata.",
+              "sourcePath": "api/interfaces/ResolvedListener.md"
+            },
+            {
+              "title": "TableListener",
+              "href": "/docs/api/interfaces/TableListener",
+              "renderer": "docs/api/interfaces/TableListener.md",
+              "description": "Describes a table and the events/fields a listener is interested in.",
+              "sourcePath": "api/interfaces/TableListener.md"
+            },
+            {
+              "title": "TransactionAdapter",
+              "href": "/docs/api/interfaces/TransactionAdapter",
+              "renderer": "docs/api/interfaces/TransactionAdapter.md",
+              "description": "ORM-agnostic adapter for running listener logic inside a transaction.",
+              "sourcePath": "api/interfaces/TransactionAdapter.md"
+            },
+            {
+              "title": "TriggerMetadata",
+              "href": "/docs/api/interfaces/TriggerMetadata",
+              "renderer": "docs/api/interfaces/TriggerMetadata.md",
+              "description": "Metadata describing a PostgreSQL trigger.",
+              "sourcePath": "api/interfaces/TriggerMetadata.md"
+            }
+          ]
+        },
+        {
+          "title": "Type aliases",
+          "href": "/docs/api/type-aliases",
+          "children": [
+            {
+              "title": "DiscoveredPgTableChangeListener",
+              "href": "/docs/api/type-aliases/DiscoveredPgTableChangeListener",
+              "renderer": "docs/api/type-aliases/DiscoveredPgTableChangeListener.md",
+              "description": "Type representing a class discovered with metadata `@RegisterPgTableChangeListener`",
+              "sourcePath": "api/type-aliases/DiscoveredPgTableChangeListener.md"
+            },
+            {
+              "title": "ExpandableParams",
+              "href": "/docs/api/type-aliases/ExpandableParams",
+              "renderer": "docs/api/type-aliases/ExpandableParams.md",
+              "description": "Represents parameters for making a controller/expander response expandable.",
+              "sourcePath": "api/type-aliases/ExpandableParams.md"
+            },
+            {
+              "title": "ExpandConfig",
+              "href": "/docs/api/type-aliases/ExpandConfig",
+              "renderer": "docs/api/type-aliases/ExpandConfig.md",
+              "description": "Represents configuration for the ExpandModule.",
+              "sourcePath": "api/type-aliases/ExpandConfig.md"
+            },
+            {
+              "title": "ExpandContext",
+              "href": "/docs/api/type-aliases/ExpandContext",
+              "renderer": "docs/api/type-aliases/ExpandContext.md",
+              "description": "Represents the context in which an expansion is performed.",
+              "sourcePath": "api/type-aliases/ExpandContext.md"
+            },
+            {
+              "title": "ExpanderMethodsParams",
+              "href": "/docs/api/type-aliases/ExpanderMethodsParams",
+              "renderer": "docs/api/type-aliases/ExpanderMethodsParams.md",
+              "description": "Parameters for the",
+              "sourcePath": "api/type-aliases/ExpanderMethodsParams.md"
+            },
+            {
+              "title": "ExpandErrorPolicy",
+              "href": "/docs/api/type-aliases/ExpandErrorPolicy",
+              "renderer": "docs/api/type-aliases/ExpandErrorPolicy.md",
+              "description": "Error policy for expansion errors.",
+              "sourcePath": "api/type-aliases/ExpandErrorPolicy.md"
+            },
+            {
+              "title": "ExpansionError",
+              "href": "/docs/api/type-aliases/ExpansionError",
+              "renderer": "docs/api/type-aliases/ExpansionError.md",
+              "description": "Represents error metadata for failed expansions.",
+              "sourcePath": "api/type-aliases/ExpansionError.md"
+            },
+            {
+              "title": "ExpansionErrorFormatter",
+              "href": "/docs/api/type-aliases/ExpansionErrorFormatter",
+              "renderer": "docs/api/type-aliases/ExpansionErrorFormatter.md",
+              "description": "Format function for expansion errors.",
+              "sourcePath": "api/type-aliases/ExpansionErrorFormatter.md"
+            },
+            {
+              "title": "ExpansionErrorHandlingConfig",
+              "href": "/docs/api/type-aliases/ExpansionErrorHandlingConfig",
+              "renderer": "docs/api/type-aliases/ExpansionErrorHandlingConfig.md",
+              "description": "Error handling configuration for expansions.",
+              "sourcePath": "api/type-aliases/ExpansionErrorHandlingConfig.md"
+            },
+            {
+              "title": "PgPubSubConfig",
+              "href": "/docs/api/type-aliases/PgPubSubConfig",
+              "renderer": "docs/api/type-aliases/PgPubSubConfig.md",
+              "description": "Configuration for the PostgreSQL pubsub module.",
+              "sourcePath": "api/type-aliases/PgPubSubConfig.md"
+            },
+            {
+              "title": "PgTableChangeErrorHandler",
+              "href": "/docs/api/type-aliases/PgTableChangeErrorHandler",
+              "renderer": "docs/api/type-aliases/PgTableChangeErrorHandler.md",
+              "description": "Type for a callback to handle errors when processing a change.",
+              "sourcePath": "api/type-aliases/PgTableChangeErrorHandler.md"
+            },
+            {
+              "title": "PgTableChangePayload",
+              "href": "/docs/api/type-aliases/PgTableChangePayload",
+              "renderer": "docs/api/type-aliases/PgTableChangePayload.md",
+              "description": "Type for a PostgreSQL table change payload.",
+              "sourcePath": "api/type-aliases/PgTableChangePayload.md"
+            },
+            {
+              "title": "PgTableChanges",
+              "href": "/docs/api/type-aliases/PgTableChanges",
+              "renderer": "docs/api/type-aliases/PgTableChanges.md",
+              "description": "Type for a batch of changes received for a PostgreSQL table.",
+              "sourcePath": "api/type-aliases/PgTableChanges.md"
+            },
+            {
+              "title": "PgTableChangeType",
+              "href": "/docs/api/type-aliases/PgTableChangeType",
+              "renderer": "docs/api/type-aliases/PgTableChangeType.md",
+              "description": "Type for a PostgreSQL table change type.",
+              "sourcePath": "api/type-aliases/PgTableChangeType.md"
+            },
+            {
+              "title": "PgTableDeletePayload",
+              "href": "/docs/api/type-aliases/PgTableDeletePayload",
+              "renderer": "docs/api/type-aliases/PgTableDeletePayload.md",
+              "description": "Type for a PostgreSQL table DELETE payload.",
+              "sourcePath": "api/type-aliases/PgTableDeletePayload.md"
+            },
+            {
+              "title": "PgTableInsertPayload",
+              "href": "/docs/api/type-aliases/PgTableInsertPayload",
+              "renderer": "docs/api/type-aliases/PgTableInsertPayload.md",
+              "description": "Type for a PostgreSQL table INSERT payload.",
+              "sourcePath": "api/type-aliases/PgTableInsertPayload.md"
+            },
+            {
+              "title": "PgTableUpdatePayload",
+              "href": "/docs/api/type-aliases/PgTableUpdatePayload",
+              "renderer": "docs/api/type-aliases/PgTableUpdatePayload.md",
+              "description": "Type for a PostgreSQL table UPDATE payload.",
+              "sourcePath": "api/type-aliases/PgTableUpdatePayload.md"
+            },
+            {
+              "title": "RegisterPgTableChangeListenerMetadata",
+              "href": "/docs/api/type-aliases/RegisterPgTableChangeListenerMetadata",
+              "renderer": "docs/api/type-aliases/RegisterPgTableChangeListenerMetadata.md",
+              "sourcePath": "api/type-aliases/RegisterPgTableChangeListenerMetadata.md"
+            },
+            {
+              "title": "ReusableExpandMethod",
+              "href": "/docs/api/type-aliases/ReusableExpandMethod",
+              "renderer": "docs/api/type-aliases/ReusableExpandMethod.md",
+              "description": "Represents a method within a",
+              "sourcePath": "api/type-aliases/ReusableExpandMethod.md"
+            },
+            {
+              "title": "SelectableParams",
+              "href": "/docs/api/type-aliases/SelectableParams",
+              "renderer": "docs/api/type-aliases/SelectableParams.md",
+              "description": "Represents parameters for making a controller response selectable.",
+              "sourcePath": "api/type-aliases/SelectableParams.md"
+            },
+            {
+              "title": "StandardExpandMethod",
+              "href": "/docs/api/type-aliases/StandardExpandMethod",
+              "renderer": "docs/api/type-aliases/StandardExpandMethod.md",
+              "description": "Represents a standard method on an",
+              "sourcePath": "api/type-aliases/StandardExpandMethod.md"
+            },
+            {
+              "title": "UseExpansionMethodConfig",
+              "href": "/docs/api/type-aliases/UseExpansionMethodConfig",
+              "renderer": "docs/api/type-aliases/UseExpansionMethodConfig.md",
+              "description": "Configuration for the",
+              "sourcePath": "api/type-aliases/UseExpansionMethodConfig.md"
+            },
+            {
+              "title": "UseExpansionMethodMetadata",
+              "href": "/docs/api/type-aliases/UseExpansionMethodMetadata",
+              "renderer": "docs/api/type-aliases/UseExpansionMethodMetadata.md",
+              "description": "Metadata stored by the",
+              "sourcePath": "api/type-aliases/UseExpansionMethodMetadata.md"
+            }
+          ]
+        },
+        {
+          "title": "Variables",
+          "href": "/docs/api/variables",
+          "children": [
+            {
+              "title": "DEFAULT_EXPAND_CONFIG",
+              "href": "/docs/api/variables/DEFAULT_EXPAND_CONFIG",
+              "renderer": "docs/api/variables/DEFAULT_EXPAND_CONFIG.md",
+              "sourcePath": "api/variables/DEFAULT_EXPAND_CONFIG.md"
+            },
+            {
+              "title": "EXPAND_CONFIG",
+              "href": "/docs/api/variables/EXPAND_CONFIG",
+              "renderer": "docs/api/variables/EXPAND_CONFIG.md",
+              "description": "Injection token for the ExpandConfig.",
+              "sourcePath": "api/variables/EXPAND_CONFIG.md"
+            },
+            {
+              "title": "EXPANDABLE_KEY",
+              "href": "/docs/api/variables/EXPANDABLE_KEY",
+              "renderer": "docs/api/variables/EXPANDABLE_KEY.md",
+              "description": "Symbol key for metadata associated with expandable parameters on controller/expander methods.",
+              "sourcePath": "api/variables/EXPANDABLE_KEY.md"
+            },
+            {
+              "title": "EXPANDER_KEY",
+              "href": "/docs/api/variables/EXPANDER_KEY",
+              "renderer": "docs/api/variables/EXPANDER_KEY.md",
+              "description": "Symbol key for metadata associated with expanders.",
+              "sourcePath": "api/variables/EXPANDER_KEY.md"
+            },
+            {
+              "title": "EXPANDER_METHODS_KEY",
+              "href": "/docs/api/variables/EXPANDER_METHODS_KEY",
+              "renderer": "docs/api/variables/EXPANDER_METHODS_KEY.md",
+              "description": "Symbol key for metadata associated with classes containing reusable expander methods.",
+              "sourcePath": "api/variables/EXPANDER_METHODS_KEY.md"
+            },
+            {
+              "title": "PG_PUBSUB_CONFIG",
+              "href": "/docs/api/variables/PG_PUBSUB_CONFIG",
+              "renderer": "docs/api/variables/PG_PUBSUB_CONFIG.md",
+              "description": "Symbol for the configuration of the PostgreSQL pubsub module.",
+              "sourcePath": "api/variables/PG_PUBSUB_CONFIG.md"
+            },
+            {
+              "title": "PG_PUBSUB_DRAIN_INTERVAL",
+              "href": "/docs/api/variables/PG_PUBSUB_DRAIN_INTERVAL",
+              "renderer": "docs/api/variables/PG_PUBSUB_DRAIN_INTERVAL.md",
+              "description": "Default delay in milliseconds between drain loop iterations.",
+              "sourcePath": "api/variables/PG_PUBSUB_DRAIN_INTERVAL.md"
+            },
+            {
+              "title": "PG_PUBSUB_FALLBACK_POLLING_INTERVAL",
+              "href": "/docs/api/variables/PG_PUBSUB_FALLBACK_POLLING_INTERVAL",
+              "renderer": "docs/api/variables/PG_PUBSUB_FALLBACK_POLLING_INTERVAL.md",
+              "description": "Default fallback polling interval in milliseconds.",
+              "sourcePath": "api/variables/PG_PUBSUB_FALLBACK_POLLING_INTERVAL.md"
+            },
+            {
+              "title": "PG_PUBSUB_LOCK_DURATION",
+              "href": "/docs/api/variables/PG_PUBSUB_LOCK_DURATION",
+              "renderer": "docs/api/variables/PG_PUBSUB_LOCK_DURATION.md",
+              "description": "Default advisory lock duration in milliseconds.",
+              "sourcePath": "api/variables/PG_PUBSUB_LOCK_DURATION.md"
+            },
+            {
+              "title": "PG_PUBSUB_POOL_MAX",
+              "href": "/docs/api/variables/PG_PUBSUB_POOL_MAX",
+              "renderer": "docs/api/variables/PG_PUBSUB_POOL_MAX.md",
+              "description": "Default maximum number of connections in the dedicated pool.",
+              "sourcePath": "api/variables/PG_PUBSUB_POOL_MAX.md"
+            },
+            {
+              "title": "PG_PUBSUB_QUEUE_BATCH_SIZE",
+              "href": "/docs/api/variables/PG_PUBSUB_QUEUE_BATCH_SIZE",
+              "renderer": "docs/api/variables/PG_PUBSUB_QUEUE_BATCH_SIZE.md",
+              "description": "Default batch size for fetching pending messages.",
+              "sourcePath": "api/variables/PG_PUBSUB_QUEUE_BATCH_SIZE.md"
+            },
+            {
+              "title": "PG_PUBSUB_QUEUE_CLEANUP_INTERVAL",
+              "href": "/docs/api/variables/PG_PUBSUB_QUEUE_CLEANUP_INTERVAL",
+              "renderer": "docs/api/variables/PG_PUBSUB_QUEUE_CLEANUP_INTERVAL.md",
+              "description": "Default cleanup interval in milliseconds.",
+              "sourcePath": "api/variables/PG_PUBSUB_QUEUE_CLEANUP_INTERVAL.md"
+            },
+            {
+              "title": "PG_PUBSUB_QUEUE_CONCURRENCY",
+              "href": "/docs/api/variables/PG_PUBSUB_QUEUE_CONCURRENCY",
+              "renderer": "docs/api/variables/PG_PUBSUB_QUEUE_CONCURRENCY.md",
+              "description": "Default maximum number of concurrent listener executions.",
+              "sourcePath": "api/variables/PG_PUBSUB_QUEUE_CONCURRENCY.md"
+            },
+            {
+              "title": "PG_PUBSUB_QUEUE_MAX_RETRIES",
+              "href": "/docs/api/variables/PG_PUBSUB_QUEUE_MAX_RETRIES",
+              "renderer": "docs/api/variables/PG_PUBSUB_QUEUE_MAX_RETRIES.md",
+              "description": "Default max retries for a failed message.",
+              "sourcePath": "api/variables/PG_PUBSUB_QUEUE_MAX_RETRIES.md"
+            },
+            {
+              "title": "PG_PUBSUB_QUEUE_MESSAGE_TTL",
+              "href": "/docs/api/variables/PG_PUBSUB_QUEUE_MESSAGE_TTL",
+              "renderer": "docs/api/variables/PG_PUBSUB_QUEUE_MESSAGE_TTL.md",
+              "description": "Default message TTL in milliseconds.",
+              "sourcePath": "api/variables/PG_PUBSUB_QUEUE_MESSAGE_TTL.md"
+            },
+            {
+              "title": "PG_PUBSUB_QUEUE_PROCESSING_TIMEOUT",
+              "href": "/docs/api/variables/PG_PUBSUB_QUEUE_PROCESSING_TIMEOUT",
+              "renderer": "docs/api/variables/PG_PUBSUB_QUEUE_PROCESSING_TIMEOUT.md",
+              "description": "Default processing timeout in milliseconds.",
+              "sourcePath": "api/variables/PG_PUBSUB_QUEUE_PROCESSING_TIMEOUT.md"
+            },
+            {
+              "title": "PG_PUBSUB_QUEUE_SCHEMA",
+              "href": "/docs/api/variables/PG_PUBSUB_QUEUE_SCHEMA",
+              "renderer": "docs/api/variables/PG_PUBSUB_QUEUE_SCHEMA.md",
+              "description": "Default queue schema.",
+              "sourcePath": "api/variables/PG_PUBSUB_QUEUE_SCHEMA.md"
+            },
+            {
+              "title": "PG_PUBSUB_QUEUE_TABLE",
+              "href": "/docs/api/variables/PG_PUBSUB_QUEUE_TABLE",
+              "renderer": "docs/api/variables/PG_PUBSUB_QUEUE_TABLE.md",
+              "description": "Default queue table name.",
+              "sourcePath": "api/variables/PG_PUBSUB_QUEUE_TABLE.md"
+            },
+            {
+              "title": "PG_PUBSUB_TRIGGER_NAME",
+              "href": "/docs/api/variables/PG_PUBSUB_TRIGGER_NAME",
+              "renderer": "docs/api/variables/PG_PUBSUB_TRIGGER_NAME.md",
+              "description": "Trigger channel name and prefix for created triggers.",
+              "sourcePath": "api/variables/PG_PUBSUB_TRIGGER_NAME.md"
+            },
+            {
+              "title": "PG_PUBSUB_TRIGGER_SCHEMA",
+              "href": "/docs/api/variables/PG_PUBSUB_TRIGGER_SCHEMA",
+              "renderer": "docs/api/variables/PG_PUBSUB_TRIGGER_SCHEMA.md",
+              "description": "Default schema for tables and triggers.",
+              "sourcePath": "api/variables/PG_PUBSUB_TRIGGER_SCHEMA.md"
+            },
+            {
+              "title": "RegisterPgTableChangeListenerMeta",
+              "href": "/docs/api/variables/RegisterPgTableChangeListenerMeta",
+              "renderer": "docs/api/variables/RegisterPgTableChangeListenerMeta.md",
+              "description": "Symbol for the metadata key used to register a PostgreSQL table change listener.",
+              "sourcePath": "api/variables/RegisterPgTableChangeListenerMeta.md"
+            },
+            {
+              "title": "SELECTABLE_KEY",
+              "href": "/docs/api/variables/SELECTABLE_KEY",
+              "renderer": "docs/api/variables/SELECTABLE_KEY.md",
+              "description": "Symbol key for metadata associated with selectable parameters.",
+              "sourcePath": "api/variables/SELECTABLE_KEY.md"
+            },
+            {
+              "title": "USE_EXPANSION_METHOD_KEY",
+              "href": "/docs/api/variables/USE_EXPANSION_METHOD_KEY",
+              "renderer": "docs/api/variables/USE_EXPANSION_METHOD_KEY.md",
+              "description": "Symbol key for metadata associated with linking reusable expander methods.",
+              "sourcePath": "api/variables/USE_EXPANSION_METHOD_KEY.md"
+            }
+          ]
+        }
+      ],
+      "sourcePath": "api/index.md"
+    }
+  ]
+}
