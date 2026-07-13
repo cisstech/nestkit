@@ -15,7 +15,7 @@
           "renderer": "docs/overview/introduction.md",
           "description": "NestKit is a collection of focused modules for NestJS developers.",
           "sourcePath": "overview/introduction.md",
-          "lastUpdated": "2026-07-13T21:31:44+02:00"
+          "lastUpdated": "2026-07-14T00:07:36+02:00"
         }
       ]
     },
@@ -28,35 +28,35 @@
           "href": "/docs/nestjs-expand/getting-started",
           "renderer": "docs/nestjs-expand/getting-started.md",
           "sourcePath": "nestjs-expand/getting-started.md",
-          "lastUpdated": "2026-07-13T21:31:44+02:00"
+          "lastUpdated": "2026-07-14T00:07:36+02:00"
         },
         {
           "title": "Installation",
           "href": "/docs/nestjs-expand/installation",
           "renderer": "docs/nestjs-expand/installation.md",
           "sourcePath": "nestjs-expand/installation.md",
-          "lastUpdated": "2026-07-13T21:31:44+02:00"
+          "lastUpdated": "2026-07-14T00:07:36+02:00"
         },
         {
           "title": "Usage",
           "href": "/docs/nestjs-expand/usage",
           "renderer": "docs/nestjs-expand/usage.md",
           "sourcePath": "nestjs-expand/usage.md",
-          "lastUpdated": "2026-07-13T21:31:44+02:00"
+          "lastUpdated": "2026-07-14T00:07:36+02:00"
         },
         {
           "title": "Advanced Usage",
           "href": "/docs/nestjs-expand/advanced-usage",
           "renderer": "docs/nestjs-expand/advanced-usage.md",
           "sourcePath": "nestjs-expand/advanced-usage.md",
-          "lastUpdated": "2026-07-13T21:31:44+02:00"
+          "lastUpdated": "2026-07-14T00:07:36+02:00"
         },
         {
           "title": "Error Handling",
           "href": "/docs/nestjs-expand/error-handling",
           "renderer": "docs/nestjs-expand/error-handling.md",
           "sourcePath": "nestjs-expand/error-handling.md",
-          "lastUpdated": "2026-07-13T21:31:44+02:00"
+          "lastUpdated": "2026-07-14T00:07:36+02:00"
         }
       ]
     },
@@ -69,35 +69,35 @@
           "href": "/docs/nestjs-pg-pubsub/getting-started",
           "renderer": "docs/nestjs-pg-pubsub/getting-started.md",
           "sourcePath": "nestjs-pg-pubsub/getting-started.md",
-          "lastUpdated": "2026-07-13T21:31:44+02:00"
+          "lastUpdated": "2026-07-14T00:07:36+02:00"
         },
         {
           "title": "Installation",
           "href": "/docs/nestjs-pg-pubsub/installation",
           "renderer": "docs/nestjs-pg-pubsub/installation.md",
           "sourcePath": "nestjs-pg-pubsub/installation.md",
-          "lastUpdated": "2026-07-13T21:31:44+02:00"
+          "lastUpdated": "2026-07-14T00:07:36+02:00"
         },
         {
           "title": "Usage",
           "href": "/docs/nestjs-pg-pubsub/usage",
           "renderer": "docs/nestjs-pg-pubsub/usage.md",
           "sourcePath": "nestjs-pg-pubsub/usage.md",
-          "lastUpdated": "2026-07-13T21:31:44+02:00"
+          "lastUpdated": "2026-07-14T00:07:36+02:00"
         },
         {
           "title": "Advanced Usage",
           "href": "/docs/nestjs-pg-pubsub/advanced-usage",
           "renderer": "docs/nestjs-pg-pubsub/advanced-usage.md",
           "sourcePath": "nestjs-pg-pubsub/advanced-usage.md",
-          "lastUpdated": "2026-07-13T21:31:44+02:00"
+          "lastUpdated": "2026-07-14T00:07:36+02:00"
         },
         {
           "title": "Sample Application",
           "href": "/docs/nestjs-pg-pubsub/sample-application",
           "renderer": "docs/nestjs-pg-pubsub/sample-application.md",
           "sourcePath": "nestjs-pg-pubsub/sample-application.md",
-          "lastUpdated": "2026-07-13T21:31:44+02:00"
+          "lastUpdated": "2026-07-14T00:07:36+02:00"
         }
       ]
     },
