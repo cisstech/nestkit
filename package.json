@@ -94,7 +94,7 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "tslib": "^2.3.0",
-    "typeorm": "^0.3.21",
+    "typeorm": "^0.3.31",
     "uuid": "^11.1.0",
     "zone.js": "0.16.2"
   },
