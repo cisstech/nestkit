@@ -12,6 +12,7 @@ Queue processing configuration
 
 | Name | Type | Description |
 | --- | --- | --- |
+| `awaitInitialPull?` | `boolean` | Whether module initialization waits for the initial pull to drain the queue. |
 | `batchSize?` | `number` | Maximum number of messages to fetch per pull cycle. |
 | `cleanupInterval?` | `number` | Interval in milliseconds to clean up old processed messages |
 | `concurrency?` | `number` | Maximum number of listener executions running in parallel. |

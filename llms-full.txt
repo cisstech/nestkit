@@ -1154,6 +1154,7 @@ PgPubSubModule.forRoot({
     maxRetries: 5,
     messageTTL: 86_400_000, // ms, cleanup threshold for old messages (24h)
     cleanupInterval: 3_600_000, // ms, how often the cleanup job runs (1h)
+    awaitInitialPull: true, // whether startup waits for the initial pull to drain the queue
   },
 })
 ```
@@ -1165,6 +1166,8 @@ PgPubSubModule.forRoot({
 **`queue.drainInterval`**: After processing a batch, the drain loop waits this long before fetching the next batch. Prevents tight-looping that could saturate the database under high throughput. Set to `0` to disable.
 
 **`queue.processingTimeout`**: Messages are moved to `processing` while being handled. If a message stays in `processing` longer than this timeout (e.g., the process crashed), it is considered orphaned and reset to `pending` on the next startup. Must be longer than your slowest listener.
+
+**`queue.awaitInitialPull`**: On startup, the library pulls every message queued while the application was down. By default, `onModuleInit` waits for this pull to drain the whole queue, so the application does not finish booting (nor open its HTTP port) until the backlog is processed. With a large backlog, a container health check can kill the instance before it ever becomes ready. Set it to `false` to drain the backlog in the background: the module initializes immediately and starts listening for notifications. Pulls are coalesced, so messages are neither lost nor processed twice, and an error in the initial pull is logged.
 
 **`pool.max`**: The library uses its own `pg.Pool` for all SQL operations (queue reads, advisory locks, trigger DDL). This pool is completely independent of TypeORM's pool, ensuring pg-pubsub keeps working even when TypeORM's pool is exhausted.
 
@@ -1963,6 +1966,7 @@ Queue processing configuration
 
 | Name | Type | Description |
 | --- | --- | --- |
+| `awaitInitialPull?` | `boolean` | Whether module initialization waits for the initial pull to drain the queue. |
 | `batchSize?` | `number` | Maximum number of messages to fetch per pull cycle. |
 | `cleanupInterval?` | `number` | Interval in milliseconds to clean up old processed messages |
 | `concurrency?` | `number` | Maximum number of listener executions running in parallel. |
