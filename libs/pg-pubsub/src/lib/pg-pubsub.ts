@@ -449,6 +449,17 @@ export interface QueueConfig {
    * @default PG_PUBSUB_QUEUE_CONCURRENCY
    */
   concurrency?: number
+
+  /**
+   * Whether module initialization waits for the initial pull to drain the queue.
+   *
+   * When `true`, `onModuleInit` only resolves once every pending message has been processed, so
+   * the application does not finish booting (nor open its HTTP port) while a backlog is drained.
+   * Set it to `false` to drain the backlog in the background instead: pulls are coalesced, so
+   * notifications received in the meantime are neither lost nor processed twice.
+   * @default true
+   */
+  awaitInitialPull?: boolean
 }
 
 /**

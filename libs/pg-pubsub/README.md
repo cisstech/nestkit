@@ -106,6 +106,7 @@ Key tuning knobs:
 | `queue.drainInterval`     | 50ms    | Pause between drain loop iterations (DB breathing room)               |
 | `queue.processingTimeout` | 5min    | After this, a `processing` message is considered orphaned and retried |
 | `queue.concurrency`       | 5       | Max listeners executing in parallel per batch                         |
+| `queue.awaitInitialPull`  | `true`  | Whether startup waits for the initial pull to drain the queue         |
 | `transactionAdapter`      | -       | ORM-agnostic adapter for wrapping listeners in transactions           |
 | `pool.max`                | 5       | Connections in the dedicated pg-pubsub pool                           |
 
