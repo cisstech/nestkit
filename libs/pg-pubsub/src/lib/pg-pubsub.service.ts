@@ -222,7 +222,14 @@ export class PgPubSubService implements OnModuleInit, OnModuleDestroy {
     this.logger.log(`Watching trigger for tables:\n${this.discovery.tableNames.join(',\n')}`)
 
     // Initial pull of any queued messages
-    await this.messageProcessorService.pullAndProcessMessages(this.config.triggerPrefix!, this.discovery)
+    const initialPull = this.messageProcessorService.pullAndProcessMessages(this.config.triggerPrefix!, this.discovery)
+    if (this.config.queue?.awaitInitialPull ?? true) {
+      await initialPull
+    } else {
+      initialPull.catch((error) => {
+        this.logger.error('Error during initial message pull:', error)
+      })
+    }
 
     // Subscribe to notifications and pull messages when notified
     await this.susbcribe<number>(this.config.triggerPrefix!, async () => {
