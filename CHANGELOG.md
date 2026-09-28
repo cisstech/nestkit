@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.15.1](https://github.com/cisstech/nestkit/compare/v1.15.0...v1.15.1) (2026-09-28)
+
+
+### Features
+
+* **app:** adopt the revamped nge-doc (brand, navbar, dark mode) ([2f81df2](https://github.com/cisstech/nestkit/commit/2f81df2b2acb5365d77505c3a2d1daed23ef2774))
+* **app:** rebuild the docs site on file-based nge-doc ([2515790](https://github.com/cisstech/nestkit/commit/25157903dc5396ea8ed027e01ba951f77c7b2dc7))
+* **pg-pubsub:** add queue.awaitInitialPull to drain the backlog without blocking startup ([29b3f0b](https://github.com/cisstech/nestkit/commit/29b3f0b46ded72a003b1b0df6158aceae976122d))
+
+
+### Bug Fixes
+
+* **app:** drop unsupported --no-build and clean up doc markdown ([ae2a17b](https://github.com/cisstech/nestkit/commit/ae2a17bc59adfdd59b1e983af91097735614251e))
+* **app:** invoke angular-cli-ghpages via npx in the deploy chain ([a3d7b42](https://github.com/cisstech/nestkit/commit/a3d7b42a21d7ced984d95ec2c493100a7a985e92))
+* **app:** unblock CI (prerender base href + lint warnings) ([cddc877](https://github.com/cisstech/nestkit/commit/cddc87760fc0f031a47f9d35b8db2a579ec0c875))
+* **app:** unbreak the gh-pages deploy ([d4a2856](https://github.com/cisstech/nestkit/commit/d4a2856be3f6db698a95768e3c2ea8a868600139))
+* **ci:** add glob so coverage-merger uses the promise API ([796730a](https://github.com/cisstech/nestkit/commit/796730a2b2811b7b1147d096619fe8613a8c26fc))
+* **ci:** disable setup-node's package-manager cache ([ab44ab7](https://github.com/cisstech/nestkit/commit/ab44ab7e27b0cfe79b39e06db972c315e98c58b5))
+* **ci:** run CI on yarn 4 via corepack ([9b701b1](https://github.com/cisstech/nestkit/commit/9b701b125476cdd1b7585ff5a5eed69fb3ed7ac6))
+* **release:** build the GitHub release notes from the changelog ([82f699b](https://github.com/cisstech/nestkit/commit/82f699b98b06754ef05bdee8f403855c46061c38))
+* **release:** deepen the release checkout so the changelog has history ([7c34e1c](https://github.com/cisstech/nestkit/commit/7c34e1c2d183f139471aaecf8d9dbcb33e1c8a27))
+* repair lint and unit tests after the Angular 22 upgrade ([d3061ef](https://github.com/cisstech/nestkit/commit/d3061ef1e5640f6507875e3cd01c7dcde638cabb))
+* update coverage-merger to the glob 10 promise API ([ae9026d](https://github.com/cisstech/nestkit/commit/ae9026d1a757ac18fd8ce55b59cf009d5c3adbef))
+
 ## [1.15.0](https://github.com/cisstech/nestkit/compare/v1.14.1...v1.15.0) (2026-03-26)
 
 ### [1.14.1](https://github.com/cisstech/nestkit/compare/v1.14.0...v1.14.1) (2026-03-26)
@@ -162,4 +186,3 @@ All notable changes to this project will be documented in this file. See [standa
 ### Bug Fixes
 
 * github page setup ([d960667](https://github.com/cisstech/nestkit/commit/d960667b2052387a95edf913e8d5f56dd795d23f))
-
