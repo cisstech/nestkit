@@ -857,9 +857,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@angular/ssr@npm:^22.0.0":
-  version: 22.0.6
-  resolution: "@angular/ssr@npm:22.0.6"
+"@angular/ssr@npm:^22.1.7":
+  version: 22.1.7
+  resolution: "@angular/ssr@npm:22.1.7"
   dependencies:
     tslib: "npm:^2.3.0"
   peerDependencies:
@@ -870,7 +870,7 @@ __metadata:
   peerDependenciesMeta:
     "@angular/platform-server":
       optional: true
-  checksum: 10c0/c012386593bbb44af2cf8806f8d07b9440ca47e1bcda415b7e7c7a1570c6e4c4c09db1035f4c00bc274dd062ea7095a8ff67fe0348592e769686f3307a4c4a5d
+  checksum: 10c0/e54b07da9d60557add747fde798fecf50a5f0072b54f8f8d3bc999eeac09b277ed3bb89ee421b2421cb797594a641cbce93fc6ed5ec564726ddb4a3c8de0517f
   languageName: node
   linkType: hard
 
@@ -21072,7 +21072,7 @@ __metadata:
     "@angular/platform-browser-dynamic": "npm:22.0.6"
     "@angular/platform-server": "npm:^22.0.0"
     "@angular/router": "npm:22.0.6"
-    "@angular/ssr": "npm:^22.0.0"
+    "@angular/ssr": "npm:^22.1.7"
     "@cisstech/nge": "npm:^22.4.3"
     "@commitlint/cli": "npm:^18.4.3"
     "@commitlint/config-conventional": "npm:^18.4.3"
