@@ -109,7 +109,7 @@
     "@angular/compiler-cli": "22.0.6",
     "@angular/language-service": "22.0.6",
     "@angular/platform-server": "^22.0.0",
-    "@angular/ssr": "^22.0.0",
+    "@angular/ssr": "^22.1.7",
     "@commitlint/cli": "^18.4.3",
     "@commitlint/config-conventional": "^18.4.3",
     "@eslint/eslintrc": "^3.0.0",
