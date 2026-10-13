@@ -151,7 +151,7 @@
     "jest-preset-angular": "17.0.0",
     "jest-util": "30.4.1",
     "jsonc-eslint-parser": "^2.1.0",
-    "nx": "23.1.0-rc.0",
+    "nx": "23.2.1",
     "prettier": "^3.1.0",
     "shiki": "^4.3.1",
     "standard-version": "^9.5.0",
